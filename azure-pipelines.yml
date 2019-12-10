@@ -86,7 +86,7 @@ jobs:
           git add -A
           git commit -m "docs(*): Update published docs"
           git remote add origin-pages https://$(GH_TOKEN)@github.com/stencila/pyla.git > /dev/null 2>&1
-          git push --quiet --set-upstream origin-pages gh-pages 
+          git push --force --set-upstream origin-pages gh-pages 
         env:
           GH_TOKEN: $(GH_TOKEN)
           PYPI_USERNAME: stencila
