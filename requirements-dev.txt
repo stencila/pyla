@@ -1,5 +1,7 @@
+m2r
 mypy
 pylint
+sphinx
 tox
 twine
 wheel

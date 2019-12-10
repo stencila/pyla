@@ -14,8 +14,8 @@ with io.open(os.path.join(os.path.dirname(__file__), 'README.md'), encoding='utf
 
 setup(
     name='stencila-pyla',
+    description='Python interpreter for Stencila',
     version=__version__,
-    description='Pyla: Python Execution Engine by Stencila',
     long_description=long_description,
     long_description_content_type='text/markdown',
     author='Stencila and contributors',

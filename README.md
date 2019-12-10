@@ -1,4 +1,6 @@
-# Pyla: Python Interpreter for Code Types of Stencila Schema
+# 🐍 Pyla
+
+#### Python interpreter for Stencila
 
 This is the Python implementation of an interpreter capable of interpreting executable
 documents in defined in JSON using [Stencila Schema](https://stencila.github.io/schema/).

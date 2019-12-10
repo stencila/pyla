@@ -1,4 +1,4 @@
-all: setup clean lint test build
+all: setup clean lint test build docs
 
 setup:
 	pip3 install --user --upgrade -r requirements-dev.txt
@@ -16,5 +16,9 @@ test:
 build:
 	python3 setup.py sdist bdist_wheel
 
+docs:
+	python3 -m sphinx docs docs/_build
+.PHONY: docs
+
 clean:
-	rm -rf build dist .coverage htmlcov coverage.xml *.egg-info .tox **/__pycache__
+	rm -rf build dist .coverage htmlcov coverage.xml *.egg-info .tox **/__pycache__ docs/_build
