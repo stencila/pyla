@@ -40,6 +40,9 @@ jobs:
       - script: make build
         displayName: 'Build package'
 
+      - script: make docs
+        displayName: 'Build docs'
+
       # Only upload coverage on if succeeded and on Linux
       - script: bash <(curl -s https://codecov.io/bash)
         condition: and(succeeded(), eq(variables['agent.os'], 'Linux'))
