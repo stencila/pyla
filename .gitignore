@@ -1,10 +1,11 @@
-.idea
-.DS_Store
 __pycache__
 .coverage
+.DS_Store
+.idea
+.mypy_cache
+.tox
+build
 coverage.xml
+dist
 htmlcov
 stencila_pyla.egg-info
-.tox
-.mypy_cache
-
