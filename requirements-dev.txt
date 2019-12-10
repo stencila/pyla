@@ -5,3 +5,4 @@ sphinx
 tox
 twine
 wheel
+python-semantic-release==4.3.3
