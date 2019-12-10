@@ -3,9 +3,7 @@
 
 import io
 import os
-import sys
-
-from setuptools import setup, Command
+from setuptools import setup
 
 from stencila.pyla import __version__
 
