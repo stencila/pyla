@@ -89,7 +89,7 @@ setup(
     packages=['stencila.pyla'],
     install_requires=[
         'astor==0.8.0',
-        # 'stencila-schema @ https://test-files.pythonhosted.org/packages/b2/fd/d8c1ab7dc5e6d6a49a26877ef9d5850f283542f4cf3339a01482233d5cc1/stencila-schema-0.30.5.tar.gz#sha256=c42d0a0a3fc29f061ca81370a0b56872483ff7e53f425b24d9bb5b9cbcd128c9'
+        'stencila-schema==0.29.0'
     ],
     extras_require={},
     include_package_data=True,
