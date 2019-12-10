@@ -79,12 +79,14 @@ jobs:
           # (e.g. stencila.schema) also installed
           python3 setup.py develop
           make docs
-          git checkout gh-pages
+          git checkout -b gh-pages
           ls -a | grep -v 'docs\|\.git' | xargs rm -rf
           cp -r docs/_build/. .
           rm -rf docs
+          git add -A
           git commit -m "docs(*): Update published docs"
-          git push --set-upstream origin gh-pages
+          git remote add origin-pages https://$(GH_TOKEN)@github.com/stencila/pyla.git > /dev/null 2>&1
+          git push --quiet --set-upstream origin-pages gh-pages 
         env:
           GH_TOKEN: $(GH_TOKEN)
           PYPI_USERNAME: stencila
