@@ -3,11 +3,15 @@
 
 import io
 import os
+import sys
 from setuptools import setup
 
-from stencila.pyla import __version__
+HERE = os.path.dirname(__file__)
 
-with io.open(os.path.join(os.path.dirname(__file__), 'README.md'), encoding='utf-8') as f:
+sys.path.insert(0, os.path.join(HERE, 'stencila'))
+from pyla import __version__
+
+with io.open(os.path.join(HERE, 'README.md'), encoding='utf-8') as f:
     long_description = '\n' + f.read()
 
 setup(
