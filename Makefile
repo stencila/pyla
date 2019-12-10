@@ -6,9 +6,6 @@ setup:
 install:
 	python3 setup.py install
 
-regen:
-	npm run build:py
-
 lint:
 	pylint stencila/pyla --max-line-length=120
 	mypy stencila/pyla --ignore-missing-imports
