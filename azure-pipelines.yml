@@ -7,15 +7,19 @@ jobs:
         linux_37:
           image_name: ubuntu-latest
           python_version: 3.7
+          tox_env: py37
         linux_36:
           image_name: ubuntu-latest
           python_version: 3.6
+          tox_env: py36
         mac:
           image_name: macOS-latest
           python_version: 3.7
+          tox_env: py37
         windows:
           image_name: windows-latest
           python_version: 3.7
+          tox_env: py37
     pool:
       vmImage: $(image_name)
     steps:
@@ -27,7 +31,7 @@ jobs:
       - script: make setup
         displayName: 'Install dependencies'
 
-      - script: make test
+      - script: tox -e $(tox_env)
         displayName: 'Run tests'
 
       - script: make build
