@@ -74,6 +74,7 @@ jobs:
           pip3 install python-semantic-release
           semantic-release publish
           # Deploy docs
+          pip3 install --upgrade -r requirements-dev.txt
           sudo python3 setup.py develop
           make docs
           git checkout gh-pages
