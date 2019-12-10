@@ -76,7 +76,7 @@ jobs:
           # Deploy docs
           make docs
           git checkout gh-pages
-          rm -rf !(".git"|"docs")
+          ls -a | grep -v 'docs\|(\.git)' | xargs rm -rf
           cp -r docs/_build/. .
           rm -rf docs
           git commit -m "docs(*): Update published docs"
