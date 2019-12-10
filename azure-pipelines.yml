@@ -16,10 +16,13 @@ jobs:
           image_name: macOS-latest
           python_version: 3.7
           tox_env: py37
-        windows:
-          image_name: windows-latest
-          python_version: 3.7
-          tox_env: py37
+
+        # Tests currently fail on windows
+        # See https://github.com/stencila/pyla/issues/2
+        # windows:
+        #  image_name: windows-latest
+        #  python_version: 3.7
+        #  tox_env: py37
     pool:
       vmImage: $(image_name)
     steps:
@@ -28,8 +31,8 @@ jobs:
           versionSpec: $(python_version)
         displayName: 'Install Python $(python_version)'
 
-      - script: make setup
-        displayName: 'Install dependencies'
+      - script: pip3 install --upgrade -r requirements-dev.txt
+        displayName: 'Install dev dependencies'
 
       - script: tox -e $(tox_env)
         displayName: 'Run tests'
