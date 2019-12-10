@@ -1,0 +1,39 @@
+# Azure Pipelines config
+
+jobs:
+  - job: test
+    strategy:
+      matrix:
+        linux_37:
+          image_name: ubuntu-latest
+          python_version: 3.7
+        linux_36:
+          image_name: ubuntu-latest
+          python_version: 3.6
+        mac:
+          image_name: macOS-latest
+          python_version: 3.7
+        windows:
+          image_name: windows-latest
+          python_version: 3.7
+    pool:
+      vmImage: $(image_name)
+    steps:
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: $(python_version)
+        displayName: 'Install Python $(python_version)'
+
+      - script: make setup
+        displayName: 'Install dependencies'
+
+      - script: make test
+        displayName: 'Run tests'
+
+      - script: make build
+        displayName: 'Build package'
+
+      # Only upload coverage on if succeeded and on Linux
+      - script: bash <(curl -s https://codecov.io/bash)
+        condition: and(succeeded(), eq(variables['agent.os'], 'Linux'))
+        displayName: 'Upload coverage'
