@@ -40,10 +40,17 @@ jobs:
       - script: make build
         displayName: 'Build package'
 
+      # Only do, these platform independent tasks on Linux and only
+      # if succeeded so far
+
+      - script: make lint
+        condition: and(succeeded(), eq(variables['agent.os'], 'Linux'))
+        displayName: 'Linting'
+      
       - script: make docs
+        condition: and(succeeded(), eq(variables['agent.os'], 'Linux'))
         displayName: 'Build docs'
 
-      # Only upload coverage on if succeeded and on Linux
       - script: bash <(curl -s https://codecov.io/bash)
         condition: and(succeeded(), eq(variables['agent.os'], 'Linux'))
         displayName: 'Upload coverage'
