@@ -5,80 +5,16 @@ import io
 import os
 import sys
 
-import subprocess
-from shutil import rmtree
-
 from setuptools import setup, Command
 
-HERE = os.path.abspath(os.path.dirname(__file__))
+from stencila.pyla import __version__
 
-with io.open(os.path.join(HERE, 'README.md'), encoding='utf-8') as f:
+with io.open(os.path.join(os.path.dirname(__file__), 'README.md'), encoding='utf-8') as f:
     long_description = '\n' + f.read()
-
-VERSION_PATH = os.path.join(HERE, 'version')
-
-
-def get_tag_version() -> str:
-    result = subprocess.run(['git', 'describe', '--tags', '--abbrev=0'], stdout=subprocess.PIPE, encoding='ascii')
-    version = result.stdout
-    return version[1:] if version.startswith('v') else version
-
-
-def get_version():
-    """On build (in CI), the version should be written out, then included and be available during install."""
-    if os.path.exists(VERSION_PATH):
-        with open(VERSION_PATH) as vf:
-            return vf.read().strip()
-
-    tag_version = get_tag_version().strip()
-    with open(VERSION_PATH, 'w') as vf:
-        vf.write(tag_version)
-    return tag_version
-
-
-class UploadCommand(Command):
-    """
-    Support setup.py upload.
-
-    Based on, and thanks to, https://github.com/kennethreitz/setup.py/blob/master/setup.py
-    """
-
-    description = 'Build and publish the package.'
-    user_options = []
-
-    @staticmethod
-    def status(s):
-        """Prints things in bold."""
-        print('\033[1m{0}\033[0m'.format(s))
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        try:
-            self.status('Removing previous builds…')
-            rmtree(os.path.join(HERE, 'dist'))
-        except OSError:
-            pass
-
-        self.status('Building Source and Wheel (universal) distribution…')
-        os.system('{0} setup.py sdist bdist_wheel --universal'.format(sys.executable))
-
-        self.status('Uploading the package to PyPI via Twine…')
-
-        repo_arg = '--repository-url https://test.pypi.org/legacy/' if os.environ.get('PYPI_ENV') == 'test' else ''
-
-        os.system('twine upload {} dist/*'.format(repo_arg))
-
-        sys.exit()
-
 
 setup(
     name='stencila-pyla',
-    version=get_version(),
+    version=__version__,
     description='Pyla: Python Execution Engine by Stencila',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -89,7 +25,7 @@ setup(
     packages=['stencila.pyla'],
     install_requires=[
         'astor==0.8.0',
-        # 'stencila-schema @ https://test-files.pythonhosted.org/packages/b2/fd/d8c1ab7dc5e6d6a49a26877ef9d5850f283542f4cf3339a01482233d5cc1/stencila-schema-0.30.5.tar.gz#sha256=c42d0a0a3fc29f061ca81370a0b56872483ff7e53f425b24d9bb5b9cbcd128c9'
+        'stencila-schema==0.29.0'
     ],
     extras_require={},
     include_package_data=True,
@@ -101,8 +37,5 @@ setup(
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy'
-    ],
-    cmdclass={
-        'upload': UploadCommand,
-    },
+    ]
 )

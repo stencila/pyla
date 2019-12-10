@@ -1,25 +1,69 @@
-# Default Azure Pipelines config for Python projects
+# Azure Pipelines config
 
-trigger:
-- master
+jobs:
+  - job: test
+    strategy:
+      matrix:
+        linux_37:
+          image_name: ubuntu-latest
+          python_version: 3.7
+          tox_env: py37
+        linux_36:
+          image_name: ubuntu-latest
+          python_version: 3.6
+          tox_env: py36
+        mac:
+          image_name: macOS-latest
+          python_version: 3.7
+          tox_env: py37
 
-pool:
-  vmImage: 'ubuntu-latest'
-strategy:
-  matrix:
-    Python36:
-      python.version: '3.6'
-    Python37:
-      python.version: '3.7'
+        # Tests currently fail on windows
+        # See https://github.com/stencila/pyla/issues/2
+        # windows:
+        #  image_name: windows-latest
+        #  python_version: 3.7
+        #  tox_env: py37
+    pool:
+      vmImage: $(image_name)
+    steps:
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: $(python_version)
+        displayName: 'Install Python $(python_version)'
 
-steps:
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '$(python.version)'
-  displayName: 'Use Python $(python.version)'
+      - script: pip3 install --upgrade -r requirements-dev.txt
+        displayName: 'Install dev dependencies'
 
-- script: pip install -r requirements-dev.txt
-  displayName: 'Install dependencies'
+      - script: tox -e $(tox_env)
+        displayName: 'Run tests'
 
-- script: tox
-  displayName: 'pytest'
+      - script: make build
+        displayName: 'Build package'
+
+      # Only upload coverage on if succeeded and on Linux
+      - script: bash <(curl -s https://codecov.io/bash)
+        condition: and(succeeded(), eq(variables['agent.os'], 'Linux'))
+        displayName: 'Upload coverage'
+
+
+  - job: deploy
+    dependsOn: test
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: 3.7
+        displayName: 'Install Python'
+
+      - script: |
+          git config user.name "Stencila CI Bot"
+          git config user.email "ci@stenci.la"
+          pip3 install python-semantic-release
+          semantic-release publish
+        env:
+          GH_TOKEN: $(GH_TOKEN)
+          PYPI_USERNAME: stencila
+          PYPI_PASSWORD: $(PYPI_PASSWORD)
+        displayName: 'Deploy package'
