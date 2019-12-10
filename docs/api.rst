@@ -3,20 +3,20 @@ API
 
 Parser
 =================
-.. automodule:: stencila.pyla.code_parsing
+.. automodule:: pyla.code_parsing
    :members:
 
 Interpreter
 =================
-.. automodule:: stencila.pyla.interpreter
+.. automodule:: pyla.interpreter
    :members:
 
 Listener
 =================
-.. automodule:: stencila.pyla.listener
+.. automodule:: pyla.listener
    :members:
 
 System
 =================
-.. automodule:: stencila.pyla.system
+.. automodule:: pyla.system
    :members:
