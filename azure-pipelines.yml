@@ -31,7 +31,7 @@ jobs:
           versionSpec: $(python_version)
         displayName: 'Install Python $(python_version)'
 
-      - script: pip3 install --upgrade -r requirements-dev.txt
+      - script: pip3 install -r requirements-dev.txt
         displayName: 'Install dev dependencies'
 
       - script: tox -e $(tox_env)
@@ -68,13 +68,13 @@ jobs:
         displayName: 'Install Python'
 
       - script: |
-          # Deploy package
+          # Install dev dependencies
+          pip3 install -r requirements-dev.txt
+          # Deploy package (if necessary)
           git config user.name "Stencila CI Bot"
           git config user.email "ci@stenci.la"
-          pip3 install python-semantic-release
           semantic-release publish
           # Deploy docs
-          pip3 install --upgrade -r requirements-dev.txt
           sudo python3 setup.py develop
           make docs
           git checkout gh-pages
