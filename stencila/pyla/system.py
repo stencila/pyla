@@ -34,12 +34,12 @@ MANIFEST = {
         'stdio': {
             'type': 'stdio',
             'command': 'python3',
-            'args': ['-m', 'stencila.pyla', 'listen']
+            'args': ['-m', 'stencila.pyla', 'serve']
         }
     }
 }
 
-MANIFEST_FILE_NAME = 'py.json'
+MANIFEST_FILE_NAME = 'pyla.json'
 EXECUTORS_DIR_NAME = 'executors'
 
 
