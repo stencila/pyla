@@ -7,7 +7,7 @@ install:
 	python3 setup.py install
 
 lint:
-	pylint stencila/pyla --max-line-length=120
+	pylint stencila/pyla
 	mypy stencila/pyla --ignore-missing-imports
 
 test:
