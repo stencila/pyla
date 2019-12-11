@@ -142,7 +142,7 @@ class JsonRpcErrorCode(enum.Enum):
     CapabilityError = -32005
 
 
-class JsonRpcError(BaseException):
+class JsonRpcError(Exception):
     """
     A JSON-RPC error that may be part of a response
 
@@ -157,12 +157,6 @@ class JsonRpcError(BaseException):
     code: JsonRpcErrorCode
 
     """
-    A string providing a short description of the error.
-    The message SHOULD be limited to a concise single sentence.
-    """
-    message: str
-
-    """
     A primitive or structured value that contains additional information about the error.
     This may be omitted.
     The value of this member is defined by the server (e.g. detailed error information,
@@ -173,7 +167,6 @@ class JsonRpcError(BaseException):
     def __init__(self, code: JsonRpcErrorCode, message: str, data: typing.Any = None):
         super().__init__(message)
         self.code = code
-        self.message = message
         self.data = data
 
 
@@ -219,8 +212,8 @@ class StreamServer:
         try:
             try:
                 request = json.loads(message)
-            except BaseException as exc:
-                raise JsonRpcError(JsonRpcErrorCode.ParseError, 'Parse error: %s' % repr(exc))
+            except Exception as exc:
+                raise JsonRpcError(JsonRpcErrorCode.ParseError, 'Parse error: {}'.format(exc))
 
             request_id = request.get('id')
             method = request.get('method')
@@ -248,15 +241,12 @@ class StreamServer:
 
                 result = code
             else:
-                raise JsonRpcError(JsonRpcErrorCode.MethodNotFound, 'Method not found: %s' % method)
-
-        # pylint: disable=broad-except
-        except BaseException as exc:
-            if isinstance(exc, JsonRpcError):
-                error = exc
-            else:
-                logging.error(exc)
-                error = JsonRpcError(JsonRpcErrorCode.ServerError, 'Internal error: %s' % repr(exc))
+                raise JsonRpcError(JsonRpcErrorCode.MethodNotFound, 'Method not found: {}'.format(method))
+        except JsonRpcError as exc:
+            error = exc
+        except Exception as exc:  # pylint: disable=broad-except
+            logging.exception(exc)
+            error = JsonRpcError(JsonRpcErrorCode.ServerError, 'Internal error: {}'.format(exc))
 
         response: typing.Dict[str, typing.Any] = {
             'jsonrpc': '2.0',
@@ -266,7 +256,6 @@ class StreamServer:
         }
 
         return to_json(response)
-
 
     def start(self) -> None:
         """
