@@ -9,13 +9,30 @@ import json
 import logging
 import typing
 from socket import socket
-from stencila.schema.types import CodeChunk
-from stencila.schema.util import to_json, from_dict
+from stencila.schema.types import CodeChunk, Node
+from stencila.schema.util import from_dict, object_encode
 
 from .code_parsing import simple_code_chunk_parse
 from .interpreter import Interpreter
 
 StreamType = typing.Union[typing.BinaryIO, socket]
+
+
+def rpc_json_object_encode(node: Node) -> typing.Union[dict, str]:
+    """Like `stencila.schema.util.object_encode` but with support for JsonRpcError."""
+    if isinstance(node, JsonRpcError):
+        return {
+            'code': node.code.value,
+            'message': str(node),
+            'data': node.data
+        }
+
+    return object_encode(node)
+
+
+def to_json(node: Node) -> str:
+    """Convert a node including JsonRrpcErrors, to JSON"""
+    return json.dumps(node, default=rpc_json_object_encode, indent=2)
 
 
 def data_to_bytes(data: typing.Any) -> bytes:
@@ -36,6 +53,7 @@ def encode_int(number: int) -> bytes:
             break
     return buf
 
+
 def read_one(stream: StreamType) -> int:
     """Read a byte from the file (as an integer).
 
@@ -45,6 +63,7 @@ def read_one(stream: StreamType) -> int:
     if char == b'':
         raise EOFError('Unexpected EOF while reading bytes')
     return ord(char)
+
 
 def read_length_prefix(stream: StreamType) -> int:
     """Read a varint from `stream`"""
@@ -196,6 +215,16 @@ class StreamServer:
         """Write a length-prefixed message to the output stream."""
         message_write(self.output_stream, message)
 
+    def execute_node(self, node: dict) -> Node:
+        """Parse a `CodeChunk` or `CodeExpression` from `node` and execute it with the `interpreter`."""
+        code = from_dict(node)
+        if isinstance(code, CodeChunk):
+            to_execute = simple_code_chunk_parse(code)
+        else:
+            to_execute = code
+        self.interpreter.execute([to_execute], {})
+        return code
+
     def receive_message(self, message: str) -> str:
         """
         Receive a JSON-RPC request and send back a JSON-RPC response.
@@ -232,14 +261,7 @@ class StreamServer:
                 if node is None:
                     raise JsonRpcError(JsonRpcErrorCode.InvalidParams, 'Invalid params: "node" is missing')
 
-                code = from_dict(node)
-                if isinstance(code, CodeChunk):
-                    to_execute = simple_code_chunk_parse(code)
-                else:
-                    to_execute = code
-                self.interpreter.execute([to_execute], {})
-
-                result = code
+                result = self.execute_node(node)
             else:
                 raise JsonRpcError(JsonRpcErrorCode.MethodNotFound, 'Method not found: {}'.format(method))
         except JsonRpcError as exc:
