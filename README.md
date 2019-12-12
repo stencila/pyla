@@ -20,7 +20,19 @@ pip3 install stencila-pyla
 
 ## Use
 
-Once installed it can be used like this:
+Register Pyla so that it can be discovered by other executors on your machine, 
+
+```bash
+python3 -m stencila.pyla register
+```
+
+Then, if you have [`executa`](https://github.com/stencila/executa) installed then you can run it using the `repl` command and specifying `python` as the starting language,
+
+```bash
+executa repl python
+```
+
+Alternatively, you can use Pyla directly to execute documents:
 
 ```bash
 $ python3 -m stencila.pyla execute <inputfile> <outputfile> [parameters]
@@ -34,21 +46,13 @@ must be named.
 
 ## Develop
 
-There are three options to run the interpreter without installing this package (which can be useful when developing).
+There are two options to run the interpreter without installing this package (which can be useful when developing).
 
 ### Use `setup.py develop`
 
 Run `python3 setup.py develop` which will link this library into your site packages directory. You can then execute
 documents with the above command.
 
-### Run `interpreter.py` directly
-
-You can run the `interpreter.py` script directly, the arguments are the same as running as a module in the example
-above except the first `execute` argument is omitted:
-
-```bash
-$ python3 stencila/pyla/interpreter.py <inputfile> <outputfile> [parameters]
-```
 
 ### Change into `stencila` folder
 

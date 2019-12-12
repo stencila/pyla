@@ -575,8 +575,3 @@ def execute_from_cli(cli_args: typing.List[str], compile_only=False) -> None:
         execute_compilation(compilation_result, cli_args)
 
     write_output(output_file, article)
-
-
-if __name__ == '__main__':
-    logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-    execute_from_cli(sys.argv[1:])

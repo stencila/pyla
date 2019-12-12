@@ -177,6 +177,22 @@ texinfo_documents = [
 
 autodoc_member_order = 'bysource'
 
+# Used m2r to convert Markdown to rst
+# Thanks to https://stackoverflow.com/a/56428123/4625911
+
+import m2r
+
+def docstring(app, what, name, obj, options, lines):
+    md  = '\n'.join(lines)
+    rst = m2r.convert(md)
+    lines.clear()
+    for line in rst.splitlines():
+        lines.append(line)
+
+def setup(app):
+    app.connect('autodoc-process-docstring', docstring)
+
+
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'https://docs.python.org/': None}
 
