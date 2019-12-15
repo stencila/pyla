@@ -249,18 +249,11 @@ class StreamServer:
             params = request.get('params')
 
             if method == 'manifest':
-                result = {
-                    # Temporary. Should return real manifest
-                    'capabilities': {
-                        'manifest': True,
-                        'execute': True
-                    }
-                }
+                result = Interpreter.MANIFEST
             elif method == 'execute':
                 node = params.get('node')
                 if node is None:
                     raise JsonRpcError(JsonRpcErrorCode.InvalidParams, 'Invalid params: "node" is missing')
-
                 result = self.execute_node(node)
             else:
                 raise JsonRpcError(JsonRpcErrorCode.MethodNotFound, 'Method not found: {}'.format(method))

@@ -227,6 +227,51 @@ class DocumentCompiler:
 class Interpreter:
     """Execute a list of code blocks, maintaining its own `globals` scope for this execution run."""
 
+    """
+    JSON Schema specification of the types of nodes that `compile` and
+    `execute` methods are capable of handling
+    """
+    CODE_CAPABILITIES = {
+        'type': 'object',
+        'required': ['node'],
+        'properties': {
+            'node': {
+                'type': 'object',
+                'required': ['type', 'programmingLanguage'],
+                'properties': {
+                    'type': {
+                        'enum': ['CodeChunk', 'CodeExpression']
+                    },
+                    'programmingLanguage': {
+                        'enum': ['python', 'py']
+                    }
+                }
+            }
+        }
+    }
+
+    """
+    The manifest of this interpreters capabilities and addresses.
+
+    Conforms to Executa's
+    [Manifest](https://github.com/stencila/executa/blob/v1.4.0/src/base/Executor.ts#L63)
+    interface.
+    """
+    MANIFEST = {
+        'version': 1,
+        'capabilities': {
+            'compile': CODE_CAPABILITIES,
+            'execute': CODE_CAPABILITIES
+        },
+        'addresses': {
+            'stdio': {
+                'type': 'stdio',
+                'command': sys.executable,
+                'args': ['-m', 'stencila.pyla', 'serve']
+            }
+        }
+    }
+
     globals: typing.Dict[str, typing.Any]
     locals: typing.Dict[str, typing.Any]
 

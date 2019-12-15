@@ -6,38 +6,10 @@ import os
 import sys
 import typing
 
+from .interpreter import Interpreter
+
 LOGGER = logging.getLogger(__name__)
 LOGGER.addHandler(logging.NullHandler())
-
-MANIFEST = {
-    'capabilities': {
-        'execute': {
-            'type': 'object',
-            'required': ['node'],
-            'properties': {
-                'node': {
-                    'type': 'object',
-                    'required': ['type', 'programmingLanguage'],
-                    'properties': {
-                        'type': {
-                            'enum': ['CodeChunk', 'CodeExpression']
-                        },
-                        'programmingLanguage': {
-                            'enum': ['python']
-                        }
-                    }
-                }
-            }
-        }
-    },
-    'addresses': {
-        'stdio': {
-            'type': 'stdio',
-            'command': 'python3',
-            'args': ['-m', 'stencila.pyla', 'serve']
-        }
-    }
-}
 
 MANIFEST_FILE_NAME = 'pyla.json'
 EXECUTORS_DIR_NAME = 'executors'
@@ -97,10 +69,9 @@ class ManifestManager:
         provide compatibility with virtual environments. The means that if you re-run the register command with
         different python binaries a different manifest will be written out.
         """
-        MANIFEST['addresses']['stdio']['command'] = sys.executable  # type:ignore
         os.makedirs(self.manifest_dir(), exist_ok=True)
         with open(self.manifest_path(), 'w') as manifest_file:
-            json.dump(MANIFEST, manifest_file, indent=True)
+            json.dump(Interpreter.MANIFEST, manifest_file, indent=True)
         LOGGER.info('Manifest saved to \'%s\'', self.manifest_path())
 
     def deregister(self) -> None:
