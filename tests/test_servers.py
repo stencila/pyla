@@ -173,7 +173,7 @@ def test_receive_message_with_unknown_method():
 
 
 def test_receive_message_with_internal_server_error():
-    """Test that a JsonRpcError with code JsonRpcErrorCode.MethodNotFound if some other exception occurs"""
+    """Test that a JsonRpcError with code JsonRpcErrorCode.ServerError if some other exception occurs"""
     message = json.dumps({
         'id': 13,
         'method': 'execute',
