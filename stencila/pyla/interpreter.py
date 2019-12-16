@@ -260,6 +260,12 @@ class Interpreter:
 
     @staticmethod
     def compile_code_chunk(chunk: CodeChunk) -> typing.Tuple[CodeChunkParseResult, CodeChunk]:
+        """
+        Compile a `CodeChunk`.
+
+        Returns a `CodeChunkParseResult` which is primarily needed for the AST, and the `CodeChunk` itself, which has
+        its code metadata properties set.
+        """
         parser = CodeChunkParser()
         cc_result = parser.parse(chunk)
         chunk.imports = cc_result.combined_code_imports(chunk.imports)

@@ -12,6 +12,7 @@ ImportsType = typing.List[typing.Union[str, SoftwareSourceCode]]
 OptionalStringList = typing.Optional[typing.List[str]]
 
 
+# pylint: disable=R0902
 class CodeChunkParseResult:
     """The result of parsing a `CodeChunk`."""
     chunk_ast: typing.Optional[ast.Module]
@@ -23,6 +24,7 @@ class CodeChunkParseResult:
     _reads: typing.List[str]
     error: typing.Optional[CodeError]
 
+    # pylint: disable=R0913
     def __init__(self,
                  chunk_ast: typing.Optional[ast.Module] = None,
                  imports: typing.Optional[ImportsType] = None,
@@ -48,7 +50,7 @@ class CodeChunkParseResult:
         `self.imports` will be combined with `existing_imports`, with duplicates removed, unless `existing_imports` has
         an empty string semaphore which indicates no new imports should be added.
         """
-        if existing_imports is None:
+        if existing_imports is None or self.imports is None:
             return self.imports
 
         if '' in existing_imports:
@@ -64,6 +66,7 @@ class CodeChunkParseResult:
 
     @property
     def imports(self) -> typing.Optional[ImportsType]:
+        """Get the `imports` list or `None` if the list is empty."""
         if not self._imports:
             return None
 
@@ -75,6 +78,7 @@ class CodeChunkParseResult:
 
     @property
     def assigns(self) -> OptionalStringList:
+        """Get the `assigns` list or `None` if the list is empty."""
         if not self._assigns:
             return None
         return self._assigns
@@ -85,6 +89,7 @@ class CodeChunkParseResult:
 
     @property
     def declares(self) -> typing.Optional[typing.List[typing.Union[Function, Variable]]]:
+        """Get the `declares` list or `None` if the list is empty."""
         if not self._declares:
             return None
         return self._declares
@@ -95,6 +100,7 @@ class CodeChunkParseResult:
 
     @property
     def alters(self) -> OptionalStringList:
+        """Get the `alters` list or `None` if the list is empty."""
         if not self._alters:
             return None
         return self._alters
@@ -105,6 +111,7 @@ class CodeChunkParseResult:
 
     @property
     def uses(self) -> OptionalStringList:
+        """Get the `uses` list or `None` if the list is empty."""
         if not self._uses:
             return None
         return self._uses
@@ -115,6 +122,7 @@ class CodeChunkParseResult:
 
     @property
     def reads(self) -> OptionalStringList:
+        """Get the `reads` list or `None` if the list is empty."""
         if not self._reads:
             return None
         return self._reads
@@ -124,6 +132,7 @@ class CodeChunkParseResult:
         self._reads = reads
 
     def _asdict(self):
+        """This method is to match the NamedTuple's built in method of the same name."""
         return {
             'chunk_ast': self.chunk_ast,
             'imports': self.imports,
