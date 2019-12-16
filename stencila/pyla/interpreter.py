@@ -291,13 +291,20 @@ class Interpreter:
         """Compile a `CodeChunk`"""
         if isinstance(node, CodeChunk) and Interpreter.is_python_code(node):
             chunk, parse_result = simple_code_chunk_parse(node)
-            if parse_result.imports: chunk.imports = parse_result.imports
-            if parse_result.assigns: chunk.assigns = parse_result.assigns
-            if parse_result.declares: chunk.declares = parse_result.declares
-            if parse_result.alters: chunk.alters = parse_result.alters
-            if parse_result.uses: chunk.uses = parse_result.uses
-            if parse_result.reads: chunk.reads = parse_result.reads
-            if parse_result.error: chunk.errors = parse_result.error
+            if parse_result.imports:
+                chunk.imports = parse_result.imports
+            if parse_result.assigns:
+                chunk.assigns = parse_result.assigns
+            if parse_result.declares:
+                chunk.declares = parse_result.declares
+            if parse_result.alters:
+                chunk.alters = parse_result.alters
+            if parse_result.uses:
+                chunk.uses = parse_result.uses
+            if parse_result.reads:
+                chunk.reads = parse_result.reads
+            if parse_result.error:
+                chunk.errors = parse_result.error
             return chunk
         raise CapabilityError('compile', node=node)
 
