@@ -28,7 +28,8 @@ from stencila.schema.types import Node, Parameter, CodeChunk, Article, Entity, C
 from stencila.schema.util import from_json, to_json
 
 from .errors import CapabilityError
-from .code_parsing import CodeChunkExecution, set_code_error, CodeChunkParser, simple_code_chunk_parse
+from .code_parsing import CodeChunkExecution, set_code_error, CodeChunkParser, simple_code_chunk_parse, \
+    CodeChunkParseResult
 
 try:
     import matplotlib.figure
@@ -78,7 +79,6 @@ CHUNK_PREVIEW_LENGTH = 20
 
 ExecutableCode = typing.Union[CodeChunkExecution, CodeExpression]
 StatementRuntime = typing.Tuple[bool, typing.Union[str], typing.Callable]
-
 
 # Used to indicate that a particular output should not be added to outputs (c.f. a valid `None` value)
 SKIP_OUTPUT_SEMAPHORE = object()
@@ -170,39 +170,11 @@ class DocumentCompiler:
                 self.function_depth -= 1
 
     @staticmethod
-    def set_code_imports(code: CodeChunk, imports: typing.List[str]) -> None:
-        """
-        Set a list of imports (strings) onto the `code` CodeChunk.
-
-        `imports` will be combined with existing imports on the CodeChunk with duplicates removed, unless the existing
-        imports has an empty string semaphore which indicates no new imports should be added.
-        """
-        if code.imports is None:
-            code.imports = imports
-            return
-
-        if '' in code.imports:
-            return
-
-        for imp in imports:
-            if imp not in code.imports:
-                code.imports.append(imp)
-
-    def handle_code(self, item: typing.Union[CodeChunk, CodeExpression],
+    def handle_code(item: typing.Union[CodeChunk, CodeExpression],
                     compilation_result: DocumentCompilationResult) -> None:
         """Parse a CodeChunk or CodeExpression and add it to `compilation_result.code` list."""
         if isinstance(item, CodeChunk):
-            parser = CodeChunkParser()
-            cc_result = parser.parse(item)
-            self.set_code_imports(item, cc_result.imports)
-            item.declares = cc_result.declares
-            item.assigns = cc_result.assigns
-            item.alters = cc_result.alters
-            item.uses = cc_result.uses
-            item.reads = cc_result.reads
-
-            if cc_result.error:
-                set_code_error(item, cc_result.error)
+            cc_result, item = Interpreter.compile_code_chunk(item)
 
             code_to_add = CodeChunkExecution(item, cc_result)
         else:
@@ -287,25 +259,25 @@ class Interpreter:
         self.locals = {}
 
     @staticmethod
+    def compile_code_chunk(chunk: CodeChunk) -> typing.Tuple[CodeChunkParseResult, CodeChunk]:
+        parser = CodeChunkParser()
+        cc_result = parser.parse(chunk)
+        chunk.imports = cc_result.combined_code_imports(chunk.imports)
+        chunk.declares = cc_result.declares
+        chunk.assigns = cc_result.assigns
+        chunk.alters = cc_result.alters
+        chunk.uses = cc_result.uses
+        chunk.reads = cc_result.reads
+
+        if cc_result.error:
+            set_code_error(chunk, cc_result.error)
+        return cc_result, chunk
+
+    @staticmethod
     def compile(node: Node) -> Node:
         """Compile a `CodeChunk`"""
         if isinstance(node, CodeChunk) and Interpreter.is_python_code(node):
-            chunk, parse_result = simple_code_chunk_parse(node)
-            if parse_result.imports:
-                chunk.imports = parse_result.imports
-            if parse_result.assigns:
-                chunk.assigns = parse_result.assigns
-            if parse_result.declares:
-                chunk.declares = parse_result.declares
-            if parse_result.alters:
-                chunk.alters = parse_result.alters
-            if parse_result.uses:
-                chunk.uses = parse_result.uses
-            if parse_result.reads:
-                chunk.reads = parse_result.reads
-            if parse_result.error:
-                chunk.errors = parse_result.error
-            return chunk
+            return Interpreter.compile_code_chunk(node)[1]
         raise CapabilityError('compile', node=node)
 
     def execute(self, node: Node, parameter_values: typing.Dict[str, typing.Any] = None) -> Node:

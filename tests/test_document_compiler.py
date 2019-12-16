@@ -137,3 +137,4 @@ def test_import_with_semaphore():
     assert 'modc' in c.imports
     assert 'modd' in c.imports
     assert '' in c.imports
+

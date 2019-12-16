@@ -8,17 +8,132 @@ import typing
 from stencila.schema.types import SoftwareSourceCode, Function, Variable, CodeError, CodeChunk, SchemaTypes, \
     BooleanSchema, StringSchema, IntegerSchema, NumberSchema, ArraySchema, TupleSchema, CodeExpression, Parameter
 
+ImportsType = typing.List[typing.Union[str, SoftwareSourceCode]]
+OptionalStringList = typing.Optional[typing.List[str]]
 
-class CodeChunkParseResult(typing.NamedTuple):
+
+class CodeChunkParseResult:
     """The result of parsing a `CodeChunk`."""
-    chunk_ast: typing.Optional[ast.Module] = None
-    imports: typing.List[typing.Union[str, SoftwareSourceCode]] = []
-    assigns: typing.List[str] = []
-    declares: typing.List[typing.Union[Function, Variable]] = []
-    alters: typing.List[str] = []
-    uses: typing.List[str] = []
-    reads: typing.List[str] = []
-    error: typing.Optional[CodeError] = None
+    chunk_ast: typing.Optional[ast.Module]
+    _imports: ImportsType
+    _assigns: typing.List[str]
+    _declares: typing.List[typing.Union[Function, Variable]]
+    _alters: typing.List[str]
+    _uses: typing.List[str]
+    _reads: typing.List[str]
+    error: typing.Optional[CodeError]
+
+    def __init__(self,
+                 chunk_ast: typing.Optional[ast.Module] = None,
+                 imports: typing.Optional[ImportsType] = None,
+                 assigns: OptionalStringList = None,
+                 declares: OptionalStringList = None,
+                 alters: OptionalStringList = None,
+                 uses: OptionalStringList = None,
+                 reads: OptionalStringList = None,
+                 error: typing.Optional[CodeError] = None):
+        self.chunk_ast = chunk_ast
+        self.imports = imports or []
+        self.assigns = assigns or []
+        self.declares = declares or []
+        self.alters = alters or []
+        self.uses = uses or []
+        self.reads = reads or []
+        self.error = error
+
+    def combined_code_imports(self, existing_imports: typing.Optional[ImportsType]) -> typing.Optional[ImportsType]:
+        """
+        Combine a list of existing imports (from a CodeChunk) with the parsed `imports`.
+
+        `self.imports` will be combined with `existing_imports`, with duplicates removed, unless `existing_imports` has
+        an empty string semaphore which indicates no new imports should be added.
+        """
+        if existing_imports is None:
+            return self.imports
+
+        if '' in existing_imports:
+            return existing_imports
+
+        imports = list(existing_imports)  # copy the list
+
+        for imp in self.imports:
+            if imp not in imports:
+                imports.append(imp)
+
+        return imports
+
+    @property
+    def imports(self) -> typing.Optional[ImportsType]:
+        if not self._imports:
+            return None
+
+        return self._imports
+
+    @imports.setter
+    def imports(self, imports: ImportsType) -> None:
+        self._imports = imports
+
+    @property
+    def assigns(self) -> OptionalStringList:
+        if not self._assigns:
+            return None
+        return self._assigns
+
+    @assigns.setter
+    def assigns(self, assigns: typing.List[str]) -> None:
+        self._assigns = assigns
+
+    @property
+    def declares(self) -> typing.Optional[typing.List[typing.Union[Function, Variable]]]:
+        if not self._declares:
+            return None
+        return self._declares
+
+    @declares.setter
+    def declares(self, declares: typing.List[typing.Union[Function, Variable]]) -> None:
+        self._declares = declares
+
+    @property
+    def alters(self) -> OptionalStringList:
+        if not self._alters:
+            return None
+        return self._alters
+
+    @alters.setter
+    def alters(self, alters: typing.List[str]) -> None:
+        self._alters = alters
+
+    @property
+    def uses(self) -> OptionalStringList:
+        if not self._uses:
+            return None
+        return self._uses
+
+    @uses.setter
+    def uses(self, uses: typing.List[str]) -> None:
+        self._uses = uses
+
+    @property
+    def reads(self) -> OptionalStringList:
+        if not self._reads:
+            return None
+        return self._reads
+
+    @reads.setter
+    def reads(self, reads: typing.List[str]) -> None:
+        self._reads = reads
+
+    def _asdict(self):
+        return {
+            'chunk_ast': self.chunk_ast,
+            'imports': self.imports,
+            'assigns': self.assigns,
+            'declares': self.declares,
+            'alters': self.alters,
+            'uses': self.uses,
+            'reads': self.reads,
+            'error': self.error
+        }
 
 
 class CodeChunkExecution(typing.NamedTuple):
