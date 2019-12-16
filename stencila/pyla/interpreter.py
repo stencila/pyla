@@ -328,7 +328,8 @@ class Interpreter:
         """Is a `CodeChunk` or `CodeExpression` Python code?"""
         return code.programmingLanguage.lower() in Interpreter.PROGRAMMING_LANGUAGES
 
-    def execute_code_expression(self, expression: CodeExpression, _locals: typing.Dict[str, typing.Any]) -> CodeExpression:
+    def execute_code_expression(self, expression: CodeExpression,
+                                _locals: typing.Dict[str, typing.Any]) -> CodeExpression:
         """Evaluate `CodeExpression.text`, and get the result. Catch any exception the occurs."""
         try:
             # pylint: disable=W0123  # Disable warning that eval is being used.
@@ -339,13 +340,14 @@ class Interpreter:
 
         return expression
 
-    def execute_code_chunk(self, chunk_execution: CodeChunkExecution, _locals: typing.Dict[str, typing.Any]) -> CodeChunk:
+    def execute_code_chunk(self, chunk_execution: CodeChunkExecution,
+                           _locals: typing.Dict[str, typing.Any]) -> CodeChunk:
         """Execute a `CodeChunk` that has been parsed and stored in a `CodeChunkExecution`."""
         chunk, parse_result = chunk_execution
 
         if parse_result.chunk_ast is None:
             LOGGER.info('Not executing CodeChunk without AST: %s', chunk.text[:CHUNK_PREVIEW_LENGTH])
-            return
+            return chunk
 
         cc_outputs: typing.List[typing.Any] = []
 
