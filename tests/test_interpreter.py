@@ -8,28 +8,25 @@ from stencila.pyla.interpreter import Interpreter, execute_compilation, compile_
 
 def execute_code_chunk(text: str) -> CodeChunk:
     cc = CodeChunk(text)
-    cce = CodeChunkExecution(
-        cc, CodeChunkParser().parse(cc)
-    )
-    Interpreter().execute([cce], {})
+    Interpreter().execute(cc)
     return cc
 
 
 def test_execute_simple_code_expression():
     ce = CodeExpression('4 + 5')
-    Interpreter().execute([ce], {})
+    Interpreter().execute(ce)
     assert ce.output == 9
 
 
 def test_execute_parameterised_code_expression():
     ce = CodeExpression('p1 + p2')
-    Interpreter().execute([ce], {'p1': 1, 'p2': 10})
+    Interpreter().execute(ce, {'p1': 1, 'p2': 10})
     assert ce.output == 11
 
 
 def test_catch_code_expression_error():
     ce = CodeExpression('1 / 0')
-    Interpreter().execute([ce], {})
+    Interpreter().execute(ce)
     assert ce.output is None
     assert ce.errors[0].kind == 'ZeroDivisionError'
     assert ce.errors[0].message == 'division by zero'
@@ -76,14 +73,10 @@ def test_code_chunk_exception_capture():
     cc1 = CodeChunk('a = 5\na + 2\nprint(\'Goodbye world!\')\nbadref += 1\nprint(\'After exception!\')')
     cc2 = CodeChunk('2 + 2\nprint(\'CodeChunk2\')')
 
-    cce1 = CodeChunkExecution(
-        cc1, CodeChunkParser().parse(cc1)
-    )
-    cce2 = CodeChunkExecution(
-        cc2, CodeChunkParser().parse(cc2)
-    )
+    interpreter = Interpreter()
+    for cc in [cc1, cc2]:
+        interpreter.execute(cc)
 
-    Interpreter().execute([cce1, cce2], {})
     assert cc1.outputs == [7, 'Goodbye world!\n']
     assert cc1.errors[0].kind == 'NameError'
 
@@ -113,7 +106,7 @@ def test_execute_compilation(mock_interpreter_class, mock_pp_class):
 
     mock_pp_class.assert_called_with(compilation_result.parameters)
     parameter_parser.parse_cli_args.assert_called_with(parameters)
-    interpreter.execute.assert_called_with(compilation_result.code, parameter_parser.parameter_values)
+    interpreter.execute.assert_not_called() #Because nothing in compilation_result
 
 
 def test_sempahore_skipping():

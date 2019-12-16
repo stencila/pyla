@@ -22,12 +22,13 @@ from io import TextIOWrapper, BytesIO
 
 import ast
 import astor
-from stencila.schema.types import Parameter, CodeChunk, Article, Entity, CodeExpression, \
+from stencila.schema.types import Node, Parameter, CodeChunk, Article, Entity, CodeExpression, \
     ConstantSchema, EnumSchema, BooleanSchema, NumberSchema, IntegerSchema, StringSchema, \
     ArraySchema, TupleSchema, ImageObject, Datatable, DatatableColumn, Function
 from stencila.schema.util import from_json, to_json
 
-from .code_parsing import CodeChunkExecution, set_code_error, CodeChunkParser
+from .errors import CapabilityError
+from .code_parsing import CodeChunkExecution, set_code_error, CodeChunkParser, simple_code_chunk_parse
 
 try:
     import matplotlib.figure
@@ -228,8 +229,14 @@ class Interpreter:
     """Execute a list of code blocks, maintaining its own `globals` scope for this execution run."""
 
     """
-    JSON Schema specification of the types of nodes that `compile` and
-    `execute` methods are capable of handling
+    List of values for the `programmingLanguage` property that are handled
+    by this interpreter.
+    """
+    PROGRAMMING_LANGUAGES = ['py', 'python']
+
+    """
+    JSON Schema specification of the types of nodes that this intertpreter's
+    `compile` and `execute` methods are capable of handling
     """
     CODE_CAPABILITIES = {
         'type': 'object',
@@ -243,7 +250,7 @@ class Interpreter:
                         'enum': ['CodeChunk', 'CodeExpression']
                     },
                     'programmingLanguage': {
-                        'enum': ['python', 'py']
+                        'enum': PROGRAMMING_LANGUAGES
                     }
                 }
             }
@@ -251,7 +258,7 @@ class Interpreter:
     }
 
     """
-    The manifest of this interpreters capabilities and addresses.
+    The manifest of this interpreter's capabilities and addresses.
 
     Conforms to Executa's
     [Manifest](https://github.com/stencila/executa/blob/v1.4.0/src/base/Executor.ts#L63)
@@ -278,6 +285,50 @@ class Interpreter:
     def __init__(self) -> None:
         self.globals = {}
         self.locals = {}
+
+    @staticmethod
+    def compile(node: Node) -> Node:
+        """Compile a `CodeChunk`"""
+        if isinstance(node, CodeChunk) and Interpreter.is_python_code(node):
+            chunk, parse_result = simple_code_chunk_parse(node)
+            if parse_result.imports: chunk.imports = parse_result.imports
+            if parse_result.assigns: chunk.assigns = parse_result.assigns
+            if parse_result.declares: chunk.declares = parse_result.declares
+            if parse_result.alters: chunk.alters = parse_result.alters
+            if parse_result.uses: chunk.uses = parse_result.uses
+            if parse_result.reads: chunk.reads = parse_result.reads
+            if parse_result.error: chunk.errors = parse_result.error
+            return chunk
+        raise CapabilityError('compile', node=node)
+
+    def execute(self, node: Node, parameter_values: typing.Dict[str, typing.Any] = None) -> Node:
+        """Execute a `CodeChunk` or `CodeExpression`"""
+        _locals = self.locals
+        if parameter_values is not None:
+            _locals.update(parameter_values)
+
+        if isinstance(node, CodeExpression):
+            return self.execute_code_expression(node, _locals)
+        if isinstance(node, CodeChunk):
+            cce = simple_code_chunk_parse(node)
+            return self.execute_code_chunk(cce, _locals)
+        if isinstance(node, CodeChunkExecution):
+            return self.execute_code_chunk(cce, _locals)
+        raise CapabilityError('execute', node=node)
+
+    @staticmethod
+    def is_python_code(code: typing.Union[CodeChunk, CodeExpression]) -> bool:
+        """Is a `CodeChunk` or `CodeExpression` Python code?"""
+        return code.programmingLanguage.lower() in Interpreter.PROGRAMMING_LANGUAGES
+
+    def execute_code_expression(self, expression: CodeExpression, _locals: typing.Dict[str, typing.Any]) -> None:
+        """Evaluate `CodeExpression.text`, and get the result. Catch any exception the occurs."""
+        try:
+            # pylint: disable=W0123  # Disable warning that eval is being used.
+            expression.output = self.decode_output(eval(expression.text, self.globals, _locals))
+        # pylint: disable=W0703  # we really don't know what Exception some eval'd code might raise.
+        except Exception as exc:
+            set_code_error(expression, exc)
 
     def execute_code_chunk(self, chunk_execution: CodeChunkExecution, _locals: typing.Dict[str, typing.Any]) -> None:
         """Execute a `CodeChunk` that has been parsed and stored in a `CodeChunkExecution`."""
@@ -387,34 +438,6 @@ class Interpreter:
             mod.body = [statement]
             code_to_run = compile(mod, '<ast>', 'exec')
         return capture_result, code_to_run, run_function
-
-    def execute_code_expression(self, expression: CodeExpression, _locals: typing.Dict[str, typing.Any]) -> None:
-        """eval `CodeExpression.text`, and get the result. Catch any exception the occurs."""
-        try:
-            # pylint: disable=W0123  # Disable warning that eval is being used.
-            expression.output = self.decode_output(eval(expression.text, self.globals, _locals))
-        # pylint: disable=W0703  # we really don't know what Exception some eval'd code might raise.
-        except Exception as exc:
-            set_code_error(expression, exc)
-
-    def execute(self, code: typing.List[ExecutableCode], parameter_values: typing.Dict[str, typing.Any]) -> None:
-        """
-        For each piece of code (`CodeChunk` or `CodeExpression`) execute it.
-
-        The `parameter_values` are used as the locals values for all executions or evals throughout the code in this
-        `Article`.
-        """
-        _locals = self.locals
-        _locals.update(parameter_values)
-        #_ locals = parameter_values.copy()
-
-        for piece in code:
-            if isinstance(piece, CodeChunkExecution):
-                self.execute_code_chunk(piece, _locals)
-            elif isinstance(piece, CodeExpression):
-                self.execute_code_expression(piece, _locals)
-            else:
-                raise TypeError('Unknown Code node type found: {}'.format(piece))
 
     @staticmethod
     def value_is_mpl(value: typing.Any) -> bool:
@@ -593,7 +616,9 @@ def execute_compilation(compilation_result: DocumentCompilationResult, parameter
     """Compile an `Article`, and interpret it with the given parameters (in a format that would be read from CLI)."""
     param_parser = ParameterParser(compilation_result.parameters)
     param_parser.parse_cli_args(parameter_flags)
-    Interpreter().execute(compilation_result.code, param_parser.parameter_values)
+    interpreter = Interpreter()
+    for code in compilation_result.code:
+        interpreter.execute(code, param_parser.parameter_values)
 
 
 def compile_article(article: Article) -> DocumentCompilationResult:

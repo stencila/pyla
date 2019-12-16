@@ -4,7 +4,7 @@ import pytest
 from unittest import mock
 
 from stencila.schema.types import CodeChunk, CodeExpression
-
+from stencila.schema.util import object_encode
 from stencila.pyla.interpreter import Interpreter
 from stencila.pyla.servers import StreamServer, message_read, message_write, read_one, encode_int, JsonRpcErrorCode
 
@@ -49,45 +49,33 @@ def test_eof_read():
 
 def test_receive_message_manifest():
     """Test receiving a manifest message."""
-    message = json.dumps({
+    server = StreamServer(Interpreter(), BytesIO(), BytesIO())
+    response = server.receive_message(json.dumps({
         'id': 10,
         'method': 'manifest',
-    })
-
-    input_str = BytesIO()
-    output_str = BytesIO()
-    server = StreamServer(Interpreter(), input_str, output_str)
-    response = server.receive_message(message)
+    }))
     decoded = json.loads(response)
     assert decoded == {
         'jsonrpc': '2.0',
         'id': 10,
-        'result': {
-            'capabilities': {
-                'manifest': True,
-                'execute': True
-            }
-        },
+        'result': Interpreter.MANIFEST,
         'error': None
     }
 
 
 def test_receive_message_execute():
-    """Test receiving an execute method, the execute_node method should be called with the node."""
-    message = json.dumps({
+    """Test receiving an execute method, the execute method of the interpreter should be called with the node."""
+    interpreter = Interpreter()
+    interpreter.execute = mock.MagicMock(name='execute', return_value='executed-code')
+    
+    server = StreamServer(interpreter, BytesIO(), BytesIO())
+    response = server.receive_message(json.dumps({
         'id': 11,
         'method': 'execute',
         'params': {
             'node': 'code-node'
         }
-    })
-
-    input_str = BytesIO()
-    output_str = BytesIO()
-    server = StreamServer(Interpreter(), input_str, output_str)
-    server.execute_node = mock.MagicMock(name='execute_node', return_value='executed-code')
-
-    response = server.receive_message(message)
+    }))
     decoded = json.loads(response)
     assert decoded == {
         'jsonrpc': '2.0',
@@ -95,23 +83,18 @@ def test_receive_message_execute():
         'result': 'executed-code',
         'error': None
     }
-    server.execute_node.assert_called_with('code-node')
+    interpreter.execute.assert_called_with('code-node')
 
 
 def test_receive_message_execute_without_node():
     """Test that JsonRpcError with code JsonRpcErrorCode.InvalidParams is returned if node is missing/None"""
-    message = json.dumps({
+    server = StreamServer(Interpreter(), BytesIO(), BytesIO())
+    response = server.receive_message(json.dumps({
         'id': 12,
         'method': 'execute',
         'params': {
         }
-    })
-
-    input_str = BytesIO()
-    output_str = BytesIO()
-    server = StreamServer(Interpreter(), input_str, output_str)
-
-    response = server.receive_message(message)
+    }))
     decoded = json.loads(response)
     assert decoded == {
         'jsonrpc': '2.0',
@@ -127,10 +110,7 @@ def test_receive_message_execute_without_node():
 
 def test_receive_message_with_invalid_json():
     """Test that a JsonRpcError with code JsonRpcErrorCode.ParseError is returned if JSON is not valid."""
-    input_str = BytesIO()
-    output_str = BytesIO()
-    server = StreamServer(Interpreter(), input_str, output_str)
-
+    server = StreamServer(Interpreter(), BytesIO(), BytesIO())
     response = server.receive_message("not a valid json")
     decoded = json.loads(response)
     assert decoded == {
@@ -147,18 +127,12 @@ def test_receive_message_with_invalid_json():
 
 def test_receive_message_with_unknown_method():
     """Test that a JsonRpcError with code JsonRpcErrorCode.MethodNotFound is returned if method is not valid."""
-    message = json.dumps({
+    server = StreamServer(Interpreter(), BytesIO(), BytesIO())
+    response = server.receive_message(json.dumps({
         'id': 13,
         'method': 'not-real',
-        'params': {
-        }
-    })
-
-    input_str = BytesIO()
-    output_str = BytesIO()
-    server = StreamServer(Interpreter(), input_str, output_str)
-
-    response = server.receive_message(message)
+        'params': {}
+    }))
     decoded = json.loads(response)
     assert decoded == {
         'jsonrpc': '2.0',
@@ -171,24 +145,37 @@ def test_receive_message_with_unknown_method():
         }
     }
 
+def test_receive_message_with_capability_error():
+    """Test that a JsonRpcError with code JsonRpcErrorCode.CapabilityError is returned when not capable."""
+    server = StreamServer(Interpreter(), BytesIO(), BytesIO())
+    response = server.receive_message(json.dumps({
+        'id': 13,
+        'method': 'compile',
+        'params': {
+            'node': {
+                'type': 'CodeChunk',
+                'programmingLanguage': 'foo',
+                'text': 'bar'
+            }
+        }
+    }))
+    decoded = json.loads(response)
+    assert decoded['error']['code'] == JsonRpcErrorCode.CapabilityError.value
+    assert decoded['error']['message'].startswith('Capability error: Incapable of method "compile"')
+
 
 def test_receive_message_with_internal_server_error():
     """Test that a JsonRpcError with code JsonRpcErrorCode.ServerError if some other exception occurs"""
-    message = json.dumps({
+    interpreter = Interpreter()
+    interpreter.execute = mock.MagicMock(name='execute', side_effect=ValueError('test exception'))
+    server = StreamServer(interpreter, BytesIO(), BytesIO())
+    response = server.receive_message(json.dumps({
         'id': 13,
         'method': 'execute',
         'params': {
             'node': 'code-node'
         }
-    })
-
-    input_str = BytesIO()
-    output_str = BytesIO()
-    server = StreamServer(Interpreter(), input_str, output_str)
-
-    server.execute_node = mock.MagicMock(name='execute_node', side_effect=ValueError('test exception'))
-
-    response = server.receive_message(message)
+    }))
     decoded = json.loads(response)
     assert decoded == {
         'jsonrpc': '2.0',
@@ -201,46 +188,35 @@ def test_receive_message_with_internal_server_error():
         }
     }
 
-
-@mock.patch('stencila.pyla.servers.simple_code_chunk_parse', name='simple_code_chunk_parse')
 @mock.patch('stencila.pyla.servers.from_dict', name='from_dict')
-def test_execute_code_chunk(from_dict, simple_code_chunk_parse):
+def test_execute_code_chunk(from_dict):
     """Test execution of a CodeChunk (with some mocks)"""
-    cc = CodeChunk('1+1')
-
-    from_dict.return_value = cc
-    node = {'node': 'node_value'}
-
-    input_str = BytesIO()
-    output_str = BytesIO()
     interpreter = mock.MagicMock(spec=Interpreter, name='interpreter')
-    server = StreamServer(interpreter, input_str, output_str)
-    executed = server.execute_node(node)
-
-    from_dict.assert_called_with(node)
-    simple_code_chunk_parse.assert_called_with(cc)
-    interpreter.execute.assert_called_with([simple_code_chunk_parse.return_value], {})
-
-    assert executed == cc
-
+    server = StreamServer(interpreter, BytesIO(), BytesIO())
+    cc = CodeChunk('1+1')
+    from_dict.return_value = cc
+    server.receive_message(json.dumps({
+        'id': 13,
+        'method': 'execute',
+        'params': {
+            'node': 'cc'
+        }
+    }))
+    interpreter.execute.assert_called_with(cc)
 
 
 @mock.patch('stencila.pyla.servers.from_dict', name='from_dict')
 def test_execute_code_expr(from_dict):
     """Test execution of a CodeExpression (with some mocks)"""
-    ce = CodeExpression('1+1')
-
-    from_dict.return_value = ce
-    node = {'node': 'node_value'}
-
-    input_str = BytesIO()
-    output_str = BytesIO()
     interpreter = mock.MagicMock(spec=Interpreter, name='interpreter')
-    server = StreamServer(interpreter, input_str, output_str)
-    executed = server.execute_node(node)
-
-    from_dict.assert_called_with(node)
-    interpreter.execute.assert_called_with([ce], {})
-
-    assert executed == ce
-
+    server = StreamServer(interpreter, BytesIO(), BytesIO())
+    ce = CodeExpression('1+1')
+    from_dict.return_value = ce
+    server.receive_message(json.dumps({
+        'id': 13,
+        'method': 'execute',
+        'params': {
+            'node': 'ce'
+        }
+    }))
+    interpreter.execute.assert_called_with(ce)
