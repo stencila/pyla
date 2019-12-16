@@ -298,7 +298,7 @@ class Interpreter:
             cce = simple_code_chunk_parse(node)
             return self.execute_code_chunk(cce, _locals)
         if isinstance(node, CodeChunkExecution):
-            return self.execute_code_chunk(cce, _locals)
+            return self.execute_code_chunk(node, _locals)
         raise CapabilityError('execute', node=node)
 
     @staticmethod
