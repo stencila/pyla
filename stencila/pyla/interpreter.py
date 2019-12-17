@@ -98,12 +98,12 @@ class CodeTimer:
         self.duration = datetime.datetime.now() - self._start_time
 
     @property
-    def duration_ms(self) -> float:
+    def duration_seconds(self) -> float:
         """Calculate the duration (time between `__enter__` and `__exit__` in microseconds."""
         if not self.duration:
             raise RuntimeError('CodeTimer has not yet been run')
 
-        return self.duration.total_seconds() * 1000
+        return self.duration.total_seconds()
 
 
 class StdoutBuffer(TextIOWrapper):
@@ -374,7 +374,7 @@ class Interpreter:
             try:
                 with CodeTimer() as code_timer:
                     result = run_function(code_to_run, self.globals, _locals)
-                duration += code_timer.duration_ms
+                duration += code_timer.duration_seconds
             # pylint: disable=W0703  # we really don't know what Exception some exec'd code might raise.
             except Exception as exc:
                 error_occurred = True

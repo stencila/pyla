@@ -106,7 +106,7 @@ def test_execute_compilation(mock_interpreter_class, mock_pp_class):
 
     mock_pp_class.assert_called_with(compilation_result.parameters)
     parameter_parser.parse_cli_args.assert_called_with(parameters)
-    interpreter.execute.assert_not_called() #Because nothing in compilation_result
+    interpreter.execute.assert_not_called()  # Because nothing in compilation_result
 
 
 def test_sempahore_skipping():
