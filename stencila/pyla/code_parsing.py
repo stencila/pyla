@@ -351,9 +351,10 @@ class CodeChunkParser:
         return CodeChunkParseResult(chunk_ast, self.imports, self.assigns, self.declares, self.alters, self.uses,
                                     self.reads)
 
-    # pylint: disable=R0912  # Too many branches warning but this is kind of a special case
+    # pylint: disable=R0912,R0915 # Too many branches/statements warning but this is kind of a special case
     def parse_statement(self,
-                        statement: typing.Union[ast.stmt, ast.expr, typing.Sequence[typing.Union[ast.stmt, ast.expr]]]
+                        statement: typing.Union[
+                            ast.stmt, ast.expr, typing.Sequence[typing.Union[ast.stmt, ast.expr, ast.comprehension]]]
                         ) -> None:
         """General statement parser that delegates to parsers for specific parser types."""
         if isinstance(statement, list):
@@ -407,7 +408,8 @@ class CodeChunkParser:
             self._parse_lambda(statement)
         elif isinstance(statement, ast.UnaryOp):
             self._parse_unary_op(statement)
-        elif isinstance(statement, (ast.ClassDef, ast.Num, ast.Str, ast.Pass, ast.NameConstant)):
+        elif isinstance(statement, (
+                ast.ClassDef, ast.Num, ast.Str, ast.Pass, ast.NameConstant, ast.Bytes, ast.Break, ast.Continue)):
             pass
         else:
             raise TypeError('Unrecognized statement: {}'.format(statement))
@@ -689,9 +691,9 @@ class CodeChunkParser:
         target = statement.target
 
         if hasattr(target, 'elts'):
-            self.name_skip = [name.id for name in target.elts]
+            self.name_skip = [name.id for name in target.elts]  # type: ignore
         elif hasattr(target, 'id'):
-            self.name_skip = [target.id]
+            self.name_skip = [target.id]  # type: ignore
 
         self.parse_statement(statement.iter)
         self.parse_statement(statement.ifs)

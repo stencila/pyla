@@ -14,6 +14,7 @@ c = 9
 c: int = 10
 def test_func():
     d = 4
+e = b'abc123'
 """
 
 FUNCTION_CODE = """
@@ -66,6 +67,7 @@ dd & ee
 ff.gg
 hh[ii]
 jj.kk.ll
+mm % nn
 """
 
 OPEN_CODE = """
@@ -169,8 +171,12 @@ if True:
 FOR_CODE = """
 for a in range(10):
     print("{}".format(d))
+    break
 else:
     print(e)
+    
+for b in range(10):
+    continue
 """
 
 EXCEPT_CODE = """
@@ -227,7 +233,7 @@ def test_variable_parsing() -> None:
 
     assert type(parse_result.declares[1]) == Function  # The correctness of parsing the function is tested elsewhere
 
-    assert parse_result.assigns == ['a', 'b']
+    assert parse_result.assigns == ['a', 'b', 'e']
 
     check_result_fields_empty(parse_result, ['declares', 'assigns'])
 
@@ -295,7 +301,7 @@ def test_uses_parsing():
     check_result_fields_empty(parse_result, ['uses'])
 
     uses = ['a', 'b', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
-            'w', 'x', 'y', 'z', 'aa', 'bb', 'cc', 'dd', 'ee', 'ff', 'hh', 'ii', 'jj']
+            'w', 'x', 'y', 'z', 'aa', 'bb', 'cc', 'dd', 'ee', 'ff', 'hh', 'ii', 'jj', 'mm', 'nn']
 
     assert sorted(uses) == sorted(parse_result.uses)
 
@@ -373,7 +379,7 @@ def test_conditional_code_parsing():
 def test_for_parsing():
     parse_result = parse_code(FOR_CODE)
 
-    assert ['a'] == parse_result.assigns
+    assert ['a', 'b'] == parse_result.assigns
     assert ['d', 'e'] == sorted(parse_result.uses)
 
     check_result_fields_empty(parse_result, ['assigns', 'uses'])
