@@ -131,8 +131,8 @@ class CodeChunkParseResult:
     def reads(self, reads: typing.List[str]) -> None:
         self._reads = reads
 
-    def _asdict(self):
-        """This method is to match the NamedTuple's built in method of the same name."""
+    def to_dict(self):
+        """Return all attributes as a dictionary.."""
         return {
             'chunk_ast': self.chunk_ast,
             'imports': self.imports,
@@ -262,6 +262,8 @@ class CodeChunkParser:
 
     seen_vars: typing.List[str]
 
+    name_skip: typing.List[str] = []
+
     def reset(self) -> None:
         """Reset the storage lists."""
         self.imports = []
@@ -295,6 +297,9 @@ class CodeChunkParser:
         any seen names to prevent duplicates (e.g. a variable would not be both declared [in `declares` list] and then
         used [in `uses` list]).
         """
+        if name in self.name_skip:  # we can temporarily skip names we are not interested in (e.g. inside lambdas)
+            return
+
         if name not in self.seen_vars and name not in target:
             self.seen_vars.append(name)
             target.append(name)
@@ -392,7 +397,17 @@ class CodeChunkParser:
             self._parse_except_handler(statement)
         elif isinstance(statement, ast.With):
             self._parse_with(statement)
-        elif isinstance(statement, (ast.ClassDef, ast.Num, ast.Str, ast.Pass)):
+        elif isinstance(statement, (ast.ListComp, ast.SetComp)):
+            self._parse_list_or_set_comprehension(statement)
+        elif isinstance(statement, ast.DictComp):
+            self._parse_dict_comprehension(statement)
+        elif isinstance(statement, ast.comprehension):
+            self._parse_comprehension(statement)
+        elif isinstance(statement, ast.Lambda):
+            self._parse_lambda(statement)
+        elif isinstance(statement, ast.UnaryOp):
+            self._parse_unary_op(statement)
+        elif isinstance(statement, (ast.ClassDef, ast.Num, ast.Str, ast.Pass, ast.NameConstant)):
             pass
         else:
             raise TypeError('Unrecognized statement: {}'.format(statement))
@@ -656,6 +671,43 @@ class CodeChunkParser:
     def _parse_with(self, statement: ast.With) -> None:
         """Parse a `with` statement (i.e. parse the statements in its `body`)."""
         self.parse_statement(statement.body)
+
+    def _parse_list_or_set_comprehension(self, statement: typing.Union[ast.ListComp, ast.SetComp]) -> None:
+        """Parse a list or set comprehension (they have the same interface)."""
+        if not isinstance(statement.elt, ast.Name):
+            # skip simple name assigns since they aren't really usable after the loop
+            self.parse_statement(statement.elt)
+        self.parse_statement(statement.generators)
+
+    def _parse_dict_comprehension(self, statement: ast.DictComp) -> None:
+        """Parse a dict comprehension."""
+        self.parse_statement(statement.generators)
+        self.parse_statement(statement.value)
+
+    def _parse_comprehension(self, statement: ast.comprehension) -> None:
+        """Parse a generator such as used in a comprehension."""
+        target = statement.target
+
+        if hasattr(target, 'elts'):
+            self.name_skip = [name.id for name in target.elts]
+        elif hasattr(target, 'id'):
+            self.name_skip = [target.id]
+
+        self.parse_statement(statement.iter)
+        self.parse_statement(statement.ifs)
+
+        self.name_skip = []
+
+    def _parse_lambda(self, statement: ast.Lambda) -> None:
+        # add the arguments to the name_skip so that they won't be added to 'uses' in the body parse
+        self.name_skip = [arg.arg for arg in statement.args.args]  # I feel like a pirate
+
+        self.parse_statement(statement.body)
+
+        self.name_skip = []
+
+    def _parse_unary_op(self, statement: ast.UnaryOp) -> None:
+        self.parse_statement(statement.operand)
 
     def _parse_file_reads(self, chunk_ast: ast.Module) -> None:
         """

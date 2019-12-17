@@ -160,6 +160,10 @@ while i:
     j = 4
 else:
     k = 5
+    
+# test pass statement
+if True:
+    pass
 """
 
 FOR_CODE = """
@@ -188,11 +192,11 @@ def parse_code(code: str) -> CodeChunkParseResult:
 
 
 def check_result_fields_empty(result: CodeChunkParseResult, non_empty_fields: typing.List[str]) -> None:
-    for name, value in result._asdict().items():
+    for name, value in result.to_dict().items():
         if name in non_empty_fields:
             continue
         if isinstance(value, list):
-            assert len(value) == 0
+            assert len(value) == 0, "{} is not empty".format(name)
 
 
 def check_parameter(p: Parameter, name: str, required: bool, default: typing.Any,
@@ -379,7 +383,7 @@ def test_except_parsing():
     parse_result = parse_code(EXCEPT_CODE)
     assert ['a', 'b', 'c', 'd', 'e'] == sorted(parse_result.assigns)
 
-    check_result_fields_empty(parse_result, ['assigns', 'uses'])
+    check_result_fields_empty(parse_result, ['assigns'])
 
 
 def test_annotation_parsing():
@@ -390,3 +394,51 @@ def test_annotation_parsing():
     assert isinstance(annotation_name_to_schema('float'), NumberSchema)
     assert isinstance(annotation_name_to_schema('list'), ArraySchema)
     assert isinstance(annotation_name_to_schema('tuple'), TupleSchema)
+
+
+def test_lambda_parsing():
+    # a basic lambda
+    lambda_code = """d = lambda x: x * e"""
+    parse_result = parse_code(lambda_code)
+    assert ['e'] == parse_result.uses
+    assert ['d'] == parse_result.assigns
+
+    check_result_fields_empty(parse_result, ['uses', 'assigns'])
+
+
+def test_comprehension_parsing():
+    list_comprehension_code = """
+# list comprehension
+a = [lambda b, c: b * c * f * g for d, e in some_array if d > h]
+i = [j for j in some_other_array]
+"""
+
+    dict_comprehension_code = """a = {b: lambda c: c * d for b in some_other_array if d < e}"""
+
+    parse_result = parse_code(list_comprehension_code)
+    assert ['a', 'i'] == sorted(parse_result.assigns)
+    assert ['f', 'g', 'h', 'some_array', 'some_other_array'] == sorted(parse_result.uses)
+    check_result_fields_empty(parse_result, ['uses', 'assigns'])
+
+    parse_result = parse_code(dict_comprehension_code)
+    assert ['a'] == parse_result.assigns
+    assert ['d', 'e', 'some_other_array'] == sorted(parse_result.uses)
+    check_result_fields_empty(parse_result, ['uses', 'assigns'])
+
+    set_comprehension_code = """a = {b for b in final_array if b > c}"""
+    parse_result = parse_code(set_comprehension_code)
+    assert ['a'] == parse_result.assigns
+    assert ['c', 'final_array'] == sorted(parse_result.uses)
+    check_result_fields_empty(parse_result, ['uses', 'assigns'])
+
+
+def test_unary_op():
+    parse_result = parse_code("x = not y")
+    assert ['x'] == parse_result.assigns
+    assert ['y'] == parse_result.uses
+    check_result_fields_empty(parse_result, ['uses', 'assigns'])
+
+    parse_result = parse_code("x = not (a or b)")
+    assert ['x'] == parse_result.assigns
+    assert ['a', 'b'] == sorted(parse_result.uses)
+    check_result_fields_empty(parse_result, ['uses', 'assigns'])
