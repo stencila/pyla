@@ -9,10 +9,10 @@ import json
 import logging
 import typing
 from socket import socket
-from stencila.schema.types import CodeChunk, Node
+from stencila.schema.types import Node
 from stencila.schema.util import from_dict, object_encode
 
-from .code_parsing import simple_code_chunk_parse
+from .errors import CapabilityError
 from .interpreter import Interpreter
 
 StreamType = typing.Union[typing.BinaryIO, socket]
@@ -215,16 +215,6 @@ class StreamServer:
         """Write a length-prefixed message to the output stream."""
         message_write(self.output_stream, message)
 
-    def execute_node(self, node: dict) -> Node:
-        """Parse a `CodeChunk` or `CodeExpression` from `node` and execute it with the `interpreter`."""
-        code = from_dict(node)
-        if isinstance(code, CodeChunk):
-            to_execute = simple_code_chunk_parse(code)
-        else:
-            to_execute = code
-        self.interpreter.execute([to_execute], {})
-        return code
-
     def receive_message(self, message: str) -> str:
         """
         Receive a JSON-RPC request and send back a JSON-RPC response.
@@ -249,23 +239,19 @@ class StreamServer:
             params = request.get('params')
 
             if method == 'manifest':
-                result = {
-                    # Temporary. Should return real manifest
-                    'capabilities': {
-                        'manifest': True,
-                        'execute': True
-                    }
-                }
-            elif method == 'execute':
+                result = Interpreter.MANIFEST
+            elif method in ('compile', 'execute'):
                 node = params.get('node')
                 if node is None:
                     raise JsonRpcError(JsonRpcErrorCode.InvalidParams, 'Invalid params: "node" is missing')
-
-                result = self.execute_node(node)
+                node = from_dict(node)
+                result = self.interpreter.compile(node) if method == 'compile' else self.interpreter.execute(node)
             else:
                 raise JsonRpcError(JsonRpcErrorCode.MethodNotFound, 'Method not found: {}'.format(method))
         except JsonRpcError as exc:
             error = exc
+        except CapabilityError as exc:
+            error = JsonRpcError(JsonRpcErrorCode.CapabilityError, 'Capability error: {}'.format(exc))
         except Exception as exc:  # pylint: disable=broad-except
             logging.exception(exc)
             error = JsonRpcError(JsonRpcErrorCode.ServerError, 'Internal error: {}'.format(exc))

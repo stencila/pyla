@@ -22,12 +22,14 @@ from io import TextIOWrapper, BytesIO
 
 import ast
 import astor
-from stencila.schema.types import Parameter, CodeChunk, Article, Entity, CodeExpression, \
+from stencila.schema.types import Node, Parameter, CodeChunk, Article, Entity, CodeExpression, \
     ConstantSchema, EnumSchema, BooleanSchema, NumberSchema, IntegerSchema, StringSchema, \
     ArraySchema, TupleSchema, ImageObject, Datatable, DatatableColumn, Function
 from stencila.schema.util import from_json, to_json
 
-from .code_parsing import CodeChunkExecution, set_code_error, CodeChunkParser
+from .errors import CapabilityError
+from .code_parsing import CodeChunkExecution, set_code_error, CodeChunkParser, simple_code_chunk_parse, \
+    CodeChunkParseResult
 
 try:
     import matplotlib.figure
@@ -77,7 +79,6 @@ CHUNK_PREVIEW_LENGTH = 20
 
 ExecutableCode = typing.Union[CodeChunkExecution, CodeExpression]
 StatementRuntime = typing.Tuple[bool, typing.Union[str], typing.Callable]
-
 
 # Used to indicate that a particular output should not be added to outputs (c.f. a valid `None` value)
 SKIP_OUTPUT_SEMAPHORE = object()
@@ -169,39 +170,11 @@ class DocumentCompiler:
                 self.function_depth -= 1
 
     @staticmethod
-    def set_code_imports(code: CodeChunk, imports: typing.List[str]) -> None:
-        """
-        Set a list of imports (strings) onto the `code` CodeChunk.
-
-        `imports` will be combined with existing imports on the CodeChunk with duplicates removed, unless the existing
-        imports has an empty string semaphore which indicates no new imports should be added.
-        """
-        if code.imports is None:
-            code.imports = imports
-            return
-
-        if '' in code.imports:
-            return
-
-        for imp in imports:
-            if imp not in code.imports:
-                code.imports.append(imp)
-
-    def handle_code(self, item: typing.Union[CodeChunk, CodeExpression],
+    def handle_code(item: typing.Union[CodeChunk, CodeExpression],
                     compilation_result: DocumentCompilationResult) -> None:
         """Parse a CodeChunk or CodeExpression and add it to `compilation_result.code` list."""
         if isinstance(item, CodeChunk):
-            parser = CodeChunkParser()
-            cc_result = parser.parse(item)
-            self.set_code_imports(item, cc_result.imports)
-            item.declares = cc_result.declares
-            item.assigns = cc_result.assigns
-            item.alters = cc_result.alters
-            item.uses = cc_result.uses
-            item.reads = cc_result.reads
-
-            if cc_result.error:
-                set_code_error(item, cc_result.error)
+            cc_result, item = Interpreter.compile_code_chunk(item)
 
             code_to_add = CodeChunkExecution(item, cc_result)
         else:
@@ -227,6 +200,57 @@ class DocumentCompiler:
 class Interpreter:
     """Execute a list of code blocks, maintaining its own `globals` scope for this execution run."""
 
+    """
+    List of values for the `programmingLanguage` property that are handled
+    by this interpreter.
+    """
+    PROGRAMMING_LANGUAGES = ['py', 'python']
+
+    """
+    JSON Schema specification of the types of nodes that this intertpreter's
+    `compile` and `execute` methods are capable of handling
+    """
+    CODE_CAPABILITIES = {
+        'type': 'object',
+        'required': ['node'],
+        'properties': {
+            'node': {
+                'type': 'object',
+                'required': ['type', 'programmingLanguage'],
+                'properties': {
+                    'type': {
+                        'enum': ['CodeChunk', 'CodeExpression']
+                    },
+                    'programmingLanguage': {
+                        'enum': PROGRAMMING_LANGUAGES
+                    }
+                }
+            }
+        }
+    }
+
+    """
+    The manifest of this interpreter's capabilities and addresses.
+
+    Conforms to Executa's
+    [Manifest](https://github.com/stencila/executa/blob/v1.4.0/src/base/Executor.ts#L63)
+    interface.
+    """
+    MANIFEST = {
+        'version': 1,
+        'capabilities': {
+            'compile': CODE_CAPABILITIES,
+            'execute': CODE_CAPABILITIES
+        },
+        'addresses': {
+            'stdio': {
+                'type': 'stdio',
+                'command': sys.executable,
+                'args': ['-m', 'stencila.pyla', 'serve']
+            }
+        }
+    }
+
     globals: typing.Dict[str, typing.Any]
     locals: typing.Dict[str, typing.Any]
 
@@ -234,13 +258,74 @@ class Interpreter:
         self.globals = {}
         self.locals = {}
 
-    def execute_code_chunk(self, chunk_execution: CodeChunkExecution, _locals: typing.Dict[str, typing.Any]) -> None:
+    @staticmethod
+    def compile_code_chunk(chunk: CodeChunk) -> typing.Tuple[CodeChunkParseResult, CodeChunk]:
+        """
+        Compile a `CodeChunk`.
+
+        Returns a `CodeChunkParseResult` which is primarily needed for the AST, and the `CodeChunk` itself, which has
+        its code metadata properties set.
+        """
+        parser = CodeChunkParser()
+        cc_result = parser.parse(chunk)
+        chunk.imports = cc_result.combined_code_imports(chunk.imports)
+        chunk.declares = cc_result.declares
+        chunk.assigns = cc_result.assigns
+        chunk.alters = cc_result.alters
+        chunk.uses = cc_result.uses
+        chunk.reads = cc_result.reads
+
+        if cc_result.error:
+            set_code_error(chunk, cc_result.error)
+        return cc_result, chunk
+
+    @staticmethod
+    def compile(node: Node) -> Node:
+        """Compile a `CodeChunk`"""
+        if isinstance(node, CodeChunk) and Interpreter.is_python_code(node):
+            return Interpreter.compile_code_chunk(node)[1]
+        raise CapabilityError('compile', node=node)
+
+    def execute(self, node: Node, parameter_values: typing.Dict[str, typing.Any] = None) -> Node:
+        """Execute a `CodeChunk` or `CodeExpression`"""
+        _locals = self.locals
+        if parameter_values is not None:
+            _locals.update(parameter_values)
+
+        if isinstance(node, CodeExpression):
+            return self.execute_code_expression(node, _locals)
+        if isinstance(node, CodeChunk):
+            cce = simple_code_chunk_parse(node)
+            return self.execute_code_chunk(cce, _locals)
+        if isinstance(node, CodeChunkExecution):
+            return self.execute_code_chunk(node, _locals)
+        raise CapabilityError('execute', node=node)
+
+    @staticmethod
+    def is_python_code(code: typing.Union[CodeChunk, CodeExpression]) -> bool:
+        """Is a `CodeChunk` or `CodeExpression` Python code?"""
+        return code.programmingLanguage.lower() in Interpreter.PROGRAMMING_LANGUAGES
+
+    def execute_code_expression(self, expression: CodeExpression,
+                                _locals: typing.Dict[str, typing.Any]) -> CodeExpression:
+        """Evaluate `CodeExpression.text`, and get the result. Catch any exception the occurs."""
+        try:
+            # pylint: disable=W0123  # Disable warning that eval is being used.
+            expression.output = self.decode_output(eval(expression.text, self.globals, _locals))
+        # pylint: disable=W0703  # we really don't know what Exception some eval'd code might raise.
+        except Exception as exc:
+            set_code_error(expression, exc)
+
+        return expression
+
+    def execute_code_chunk(self, chunk_execution: CodeChunkExecution,
+                           _locals: typing.Dict[str, typing.Any]) -> CodeChunk:
         """Execute a `CodeChunk` that has been parsed and stored in a `CodeChunkExecution`."""
         chunk, parse_result = chunk_execution
 
         if parse_result.chunk_ast is None:
             LOGGER.info('Not executing CodeChunk without AST: %s', chunk.text[:CHUNK_PREVIEW_LENGTH])
-            return
+            return chunk
 
         cc_outputs: typing.List[typing.Any] = []
 
@@ -269,6 +354,8 @@ class Interpreter:
                 cc_outputs[new_last_index] = self.decode_mpl()
 
         chunk.outputs = cc_outputs
+
+        return chunk
 
     def execute_statement(self, statement: ast.stmt, chunk: CodeChunk, _locals: typing.Dict[str, typing.Any],
                           cc_outputs: typing.List[str], duration: float) -> typing.Tuple[float, bool]:
@@ -342,34 +429,6 @@ class Interpreter:
             mod.body = [statement]
             code_to_run = compile(mod, '<ast>', 'exec')
         return capture_result, code_to_run, run_function
-
-    def execute_code_expression(self, expression: CodeExpression, _locals: typing.Dict[str, typing.Any]) -> None:
-        """eval `CodeExpression.text`, and get the result. Catch any exception the occurs."""
-        try:
-            # pylint: disable=W0123  # Disable warning that eval is being used.
-            expression.output = self.decode_output(eval(expression.text, self.globals, _locals))
-        # pylint: disable=W0703  # we really don't know what Exception some eval'd code might raise.
-        except Exception as exc:
-            set_code_error(expression, exc)
-
-    def execute(self, code: typing.List[ExecutableCode], parameter_values: typing.Dict[str, typing.Any]) -> None:
-        """
-        For each piece of code (`CodeChunk` or `CodeExpression`) execute it.
-
-        The `parameter_values` are used as the locals values for all executions or evals throughout the code in this
-        `Article`.
-        """
-        _locals = self.locals
-        _locals.update(parameter_values)
-        #_ locals = parameter_values.copy()
-
-        for piece in code:
-            if isinstance(piece, CodeChunkExecution):
-                self.execute_code_chunk(piece, _locals)
-            elif isinstance(piece, CodeExpression):
-                self.execute_code_expression(piece, _locals)
-            else:
-                raise TypeError('Unknown Code node type found: {}'.format(piece))
 
     @staticmethod
     def value_is_mpl(value: typing.Any) -> bool:
@@ -548,7 +607,9 @@ def execute_compilation(compilation_result: DocumentCompilationResult, parameter
     """Compile an `Article`, and interpret it with the given parameters (in a format that would be read from CLI)."""
     param_parser = ParameterParser(compilation_result.parameters)
     param_parser.parse_cli_args(parameter_flags)
-    Interpreter().execute(compilation_result.code, param_parser.parameter_values)
+    interpreter = Interpreter()
+    for code in compilation_result.code:
+        interpreter.execute(code, param_parser.parameter_values)
 
 
 def compile_article(article: Article) -> DocumentCompilationResult:
