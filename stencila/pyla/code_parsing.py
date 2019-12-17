@@ -2,6 +2,7 @@
 Handles parsing of CodeChunks to extract their properties and information about variables and functions used/defined.
 """
 import ast
+import logging
 import traceback
 import typing
 
@@ -11,6 +12,8 @@ from stencila.schema.types import SoftwareSourceCode, Function, Variable, CodeEr
 ImportsType = typing.List[typing.Union[str, SoftwareSourceCode]]
 OptionalStringList = typing.Optional[typing.List[str]]
 
+LOGGER = logging.getLogger(__name__)
+LOGGER.addHandler(logging.NullHandler())
 
 # pylint: disable=R0902
 class CodeChunkParseResult:
@@ -412,7 +415,7 @@ class CodeChunkParser:
                 ast.ClassDef, ast.Num, ast.Str, ast.Pass, ast.NameConstant, ast.Bytes, ast.Break, ast.Continue)):
             pass
         else:
-            raise TypeError('Unrecognized statement: {}'.format(statement))
+            LOGGER.warning('Unrecognized statement %s', statement)
 
     def _parse_import(self, statement: typing.Union[ast.ImportFrom, ast.Import]) -> None:
         """
