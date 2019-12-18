@@ -268,7 +268,7 @@ class Interpreter:
         """
         parser = CodeChunkParser()
         cc_result = parser.parse(chunk)
-        chunk.imports = cc_result.combined_code_imports(chunk.imports)
+        chunk.imports = cc_result.resolved_code_imports(chunk.imports)
         chunk.declares = cc_result.declares
         chunk.assigns = cc_result.assigns
         chunk.alters = cc_result.alters

@@ -67,6 +67,23 @@ class CodeChunkParseResult:
 
         return imports
 
+    def resolved_code_imports(self, existing_imports: typing.Optional[ImportsType]) -> typing.Optional[typing.List[SoftwareSourceCode]]:
+        """
+        Resolve the name of modules to packages.
+
+        In Python there is not a one-to-one between the name of the imported module
+        and the package / distribution it belongs to.
+        """
+        imports = self.combined_code_imports(existing_imports)
+        if not imports:
+            return None
+        
+        sscs = []
+        for name in imports:
+            # TODO: check that the import is not already a `SoftwareSourceCode`
+            sscs.append(SoftwareSourceCode(name=name, runtimePlatform='python'))
+        return sscs
+
     @property
     def imports(self) -> typing.Optional[ImportsType]:
         """Get the `imports` list or `None` if the list is empty."""
