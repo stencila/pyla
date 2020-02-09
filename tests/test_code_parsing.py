@@ -1,8 +1,8 @@
 import typing
-from stencila.schema.types import Variable, IntegerSchema, CodeChunk, Function, Parameter, SchemaTypes, StringSchema, \
-    BooleanSchema, NumberSchema, ArraySchema, TupleSchema
+from stencila.schema.types import Variable, IntegerValidator, CodeChunk, Function, Parameter, ValidatorTypes, StringValidator, \
+    BooleanValidator, NumberValidator, ArrayValidator, TupleValidator
 
-from stencila.pyla.code_parsing import CodeChunkParseResult, annotation_name_to_schema, CodeChunkParser
+from stencila.pyla.code_parsing import CodeChunkParseResult, annotation_name_to_validator, CodeChunkParser
 
 ASSIGNMENT_CODE = """
 # this code assigns variables
@@ -41,10 +41,11 @@ def annotated_types(h: int, j: str = 'bar') -> bool:
 
 def named_constants(t = True, f = False, n = None):
     return False
-    
+
+
 def function_defaults(v = somefunc()):
     return 0
-    
+
 def basic():  # don't add it twice
     return 2
 """
@@ -206,12 +207,12 @@ def check_result_fields_empty(result: CodeChunkParseResult, non_empty_fields: ty
 
 
 def check_parameter(p: Parameter, name: str, required: bool, default: typing.Any,
-                    schema: typing.Optional[typing.Type[SchemaTypes]]) -> None:
+                    validator: typing.Optional[typing.Type[ValidatorTypes]]) -> None:
     assert p.name == name
     assert p.required == required
     assert p.default == default
-    if schema is not None:
-        assert isinstance(p.schema, schema)
+    if validator is not None:
+        assert isinstance(p.validator, validator)
 
 
 def test_variable_parsing() -> None:
@@ -229,7 +230,7 @@ def test_variable_parsing() -> None:
     assert len(parse_result.declares) == 2
     assert type(parse_result.declares[0]) == Variable
     assert parse_result.declares[0].name == 'c'
-    assert type(parse_result.declares[0].schema) == IntegerSchema
+    assert type(parse_result.declares[0].validator) == IntegerValidator
 
     assert type(parse_result.declares[1]) == Function  # The correctness of parsing the function is tested elsewhere
 
@@ -278,9 +279,9 @@ def test_function_def_parsing():
 
     assert annotated_types.name == 'annotated_types'
     assert len(annotated_types.parameters) == 2
-    assert isinstance(annotated_types.returns, BooleanSchema)
-    check_parameter(annotated_types.parameters[0], 'h', True, None, IntegerSchema)
-    check_parameter(annotated_types.parameters[1], 'j', False, 'bar', StringSchema)
+    assert isinstance(annotated_types.returns, BooleanValidator)
+    check_parameter(annotated_types.parameters[0], 'h', True, None, IntegerValidator)
+    check_parameter(annotated_types.parameters[1], 'j', False, 'bar', StringValidator)
 
     assert named_constants.name == 'named_constants'
     assert len(named_constants.parameters) == 3
@@ -309,8 +310,8 @@ def test_uses_parsing():
 def test_parsing_error():
     parse_result = parse_code('this is invalid python++ code')
 
-    assert parse_result.error.kind == 'SyntaxError'
-    assert parse_result.error.message == 'invalid syntax (<unknown>, line 1)'
+    assert parse_result.error.errorType == 'SyntaxError'
+    assert parse_result.error.errorMessage == 'invalid syntax (<unknown>, line 1)'
 
 
 def test_reads_parsing():
@@ -393,13 +394,13 @@ def test_except_parsing():
 
 
 def test_annotation_parsing():
-    assert annotation_name_to_schema(None) is None
-    assert isinstance(annotation_name_to_schema('bool'), BooleanSchema)
-    assert isinstance(annotation_name_to_schema('str'), StringSchema)
-    assert isinstance(annotation_name_to_schema('int'), IntegerSchema)
-    assert isinstance(annotation_name_to_schema('float'), NumberSchema)
-    assert isinstance(annotation_name_to_schema('list'), ArraySchema)
-    assert isinstance(annotation_name_to_schema('tuple'), TupleSchema)
+    assert annotation_name_to_validator(None) is None
+    assert isinstance(annotation_name_to_validator('bool'), BooleanValidator)
+    assert isinstance(annotation_name_to_validator('str'), StringValidator)
+    assert isinstance(annotation_name_to_validator('int'), IntegerValidator)
+    assert isinstance(annotation_name_to_validator('float'), NumberValidator)
+    assert isinstance(annotation_name_to_validator('list'), ArrayValidator)
+    assert isinstance(annotation_name_to_validator('tuple'), TupleValidator)
 
 
 def test_lambda_parsing():

@@ -23,8 +23,8 @@ from io import TextIOWrapper, BytesIO
 import ast
 import astor
 from stencila.schema.types import Node, Parameter, CodeChunk, Article, Entity, CodeExpression, \
-    ConstantSchema, EnumSchema, BooleanSchema, NumberSchema, IntegerSchema, StringSchema, \
-    ArraySchema, TupleSchema, ImageObject, Datatable, DatatableColumn, Function
+    ConstantValidator, EnumValidator, BooleanValidator, NumberValidator, IntegerValidator, StringValidator, \
+    ArrayValidator, TupleValidator, ImageObject, Datatable, DatatableColumn, Function
 from stencila.schema.util import from_json, to_json
 
 from .errors import CapabilityError
@@ -461,21 +461,21 @@ class Interpreter:
             column = data_frame[column_name]
             values = column.tolist()
             if column.dtype in (numpy.bool_, numpy.bool8):
-                schema = BooleanSchema()
+                validator = BooleanValidator()
                 values = [bool(row) for row in values]
             elif column.dtype in (numpy.int8, numpy.int16, numpy.int32, numpy.int64):
-                schema = IntegerSchema()
+                validator = IntegerValidator()
                 values = [int(row) for row in values]
             elif column.dtype in (numpy.float16, numpy.float32, numpy.float64):
-                schema = NumberSchema()
+                validator = NumberValidator()
                 values = [float(row) for row in values]
             elif column.dtype in (numpy.str_, numpy.unicode_,):
-                schema = StringSchema()
+                validator = StringValidator()
             else:
-                schema = None
+                validator = None
 
             columns.append(
-                DatatableColumn(column_name, values, schema=ArraySchema(items=schema))
+                DatatableColumn(column_name, values, validator=ArrayValidator(items=validator))
             )
 
         return Datatable(columns)
@@ -533,7 +533,7 @@ class ParameterParser:
         param_parser = argparse.ArgumentParser(description='Parse Parameters')
 
         for param in self.parameters.values():
-            if not isinstance(param.schema, ConstantSchema):
+            if not isinstance(param.validator, ConstantValidator):
                 param_parser.add_argument('--' + param.name, dest=param.name, required=param.required)
 
         args, _ = param_parser.parse_known_args(cli_args)
@@ -550,25 +550,25 @@ class ParameterParser:
     @staticmethod
     def deserialize_parameter(parameter: Parameter, value: typing.Any) -> typing.Any:
         """Convert a value (usually a string) into the type specified by the parameter's schema."""
-        if isinstance(parameter.schema, ConstantSchema):
-            # A ConstantSchema doesn't take a value it stores its own value.
-            return parameter.schema.value
+        if isinstance(parameter.validator, ConstantValidator):
+            # A ConstantValidator doesn't take a value it stores its own value.
+            return parameter.validator.value
 
-        if isinstance(parameter.schema, EnumSchema):
-            if value not in parameter.schema.values:
+        if isinstance(parameter.validator, EnumValidator):
+            if value not in parameter.validator.values:
                 raise TypeError('{} not found in enum values for {}'.format(value, parameter.name))
             return value
 
-        if isinstance(parameter.schema, BooleanSchema):
+        if isinstance(parameter.validator, BooleanValidator):
             return value.lower() in ('true', 'yes', '1', 't')
 
         conversion_function: typing.Optional[typing.Callable] = None
 
-        if isinstance(parameter.schema, IntegerSchema):
+        if isinstance(parameter.validator, IntegerValidator):
             conversion_function = int
-        elif isinstance(parameter.schema, NumberSchema):
+        elif isinstance(parameter.validator, NumberValidator):
             conversion_function = float  # If there are problems with inaccuracy consider using Decimal instead
-        elif isinstance(parameter.schema, (ArraySchema, TupleSchema)):
+        elif isinstance(parameter.validator, (ArrayValidator, TupleValidator)):
             conversion_function = json.loads
 
         return conversion_function(value) if conversion_function else value

@@ -28,9 +28,9 @@ def test_catch_code_expression_error():
     ce = CodeExpression('1 / 0')
     Interpreter().execute(ce)
     assert ce.output is None
-    assert ce.errors[0].kind == 'ZeroDivisionError'
-    assert ce.errors[0].message == 'division by zero'
-    assert ce.errors[0].trace is not None
+    assert ce.errors[0].errorType == 'ZeroDivisionError'
+    assert ce.errors[0].errorMessage == 'division by zero'
+    assert ce.errors[0].stackTrace is not None
 
 
 @unittest.mock.patch('stencila.pyla.interpreter.LOGGER')
@@ -78,7 +78,7 @@ def test_code_chunk_exception_capture():
         interpreter.execute(cc)
 
     assert cc1.outputs == [7, 'Goodbye world!\n']
-    assert cc1.errors[0].kind == 'NameError'
+    assert cc1.errors[0].errorType == 'NameError'
 
     assert cc2.outputs == [4, 'CodeChunk2\n']
 

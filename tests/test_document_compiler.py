@@ -22,8 +22,8 @@ def test_compile_article():
             {
                 'type': 'Parameter',
                 'name': 'parameter_one',
-                'schema': {
-                    'type': 'IntegerSchema'
+                'validator': {
+                    'type': 'IntegerValidator'
                 }
             },
             {

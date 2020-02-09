@@ -6,8 +6,9 @@ import logging
 import traceback
 import typing
 
-from stencila.schema.types import SoftwareSourceCode, Function, Variable, CodeError, CodeChunk, SchemaTypes, \
-    BooleanSchema, StringSchema, IntegerSchema, NumberSchema, ArraySchema, TupleSchema, CodeExpression, Parameter
+from stencila.schema.types import SoftwareSourceCode, Function, Variable, CodeError, CodeChunk, ValidatorTypes, \
+    BooleanValidator, StringValidator, IntegerValidator, NumberValidator, ArrayValidator, TupleValidator, \
+    CodeExpression, Parameter
 
 ImportsType = typing.List[typing.Union[str, SoftwareSourceCode]]
 OptionalStringList = typing.Optional[typing.List[str]]
@@ -158,18 +159,18 @@ class CodeChunkExecution(typing.NamedTuple):
     parse_result: CodeChunkParseResult
 
 
-def annotation_name_to_schema(name: typing.Optional[str]) -> typing.Optional[SchemaTypes]:
-    """Parse a Python annotation string (basically a type name) and convert to a `Schema` type."""
+def annotation_name_to_validator(name: typing.Optional[str]) -> typing.Optional[ValidatorTypes]:
+    """Parse a Python annotation string (basically a type name) and convert to a `Validator` type."""
     if name is None:
         return None
 
     return {
-        'bool': BooleanSchema(),
-        'str': StringSchema(),
-        'int': IntegerSchema(),
-        'float': NumberSchema(),
-        'list': ArraySchema(),
-        'tuple': TupleSchema()
+        'bool': BooleanValidator(),
+        'str': StringValidator(),
+        'int': IntegerValidator(),
+        'float': NumberValidator(),
+        'list': ArrayValidator(),
+        'tuple': TupleValidator()
     }.get(name)
 
 
@@ -219,8 +220,11 @@ def parse_open_filename(open_call: ast.Call) -> typing.Optional[str]:
 
 def exception_to_code_error(exception: Exception) -> CodeError:
     """Convert an `Exception` to a `CodeError` entity."""
-    return CodeError(type(exception).__name__, message=str(exception), trace=traceback.format_exc())
-
+    return CodeError(
+        errorType=type(exception).__name__,
+        errorMessage=str(exception),
+        stackTrace=traceback.format_exc()
+    )
 
 def set_code_error(code: typing.Union[CodeChunk, CodeExpression],
                    error: typing.Union[Exception, CodeError]) -> None:
@@ -282,14 +286,14 @@ class CodeChunkParser:
         """
         Store a variable declaration.
 
-        Parses the `type_annotation` (if set) and transforms to a Schema subclass.
+        Parses the `type_annotation` (if set) and transforms to a Validator subclass.
         """
         if name in self.seen_vars:
             return
 
         self.seen_vars.append(name)
         self.declares.append(
-            Variable(name, schema=annotation_name_to_schema(type_annotation))
+            Variable(name, validator=annotation_name_to_validator(type_annotation))
         )
 
     def add_name(self, name: str, target: typing.List) -> None:
@@ -567,13 +571,13 @@ class CodeChunkParser:
 
         return_ann = statement.returns.id if isinstance(statement.returns, ast.Name) else None
 
-        func = Function(statement.name, returns=annotation_name_to_schema(return_ann), parameters=[])
+        func = Function(name=statement.name, returns=annotation_name_to_validator(return_ann), parameters=[])
 
         for i, arg in enumerate(statement.args.args):
             param = Parameter(arg.arg)
 
             if arg.annotation and hasattr(arg.annotation, 'id'):
-                param.schema = annotation_name_to_schema(arg.annotation.id)  # type: ignore
+                param.validator = annotation_name_to_validator(arg.annotation.id)  # type: ignore
 
             default_index = len(statement.args.defaults) - len(statement.args.args) + i
             # Only the last len(statement.args.defaults) can have defaults (since they must come after non-default
@@ -597,10 +601,10 @@ class CodeChunkParser:
             func.parameters.append(param)
 
         if statement.args.vararg:
-            func.parameters.append(Parameter(statement.args.vararg.arg, required=False, repeats=True))
+            func.parameters.append(Parameter(name=statement.args.vararg.arg, required=False, repeats=True))
 
         if statement.args.kwarg:
-            func.parameters.append(Parameter(statement.args.kwarg.arg, required=False, extends=True))
+            func.parameters.append(Parameter(name=statement.args.kwarg.arg, required=False, extends=True))
 
         self.seen_vars.append(func.name)
         self.declares.append(func)
