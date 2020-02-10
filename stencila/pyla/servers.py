@@ -21,11 +21,7 @@ StreamType = typing.Union[typing.BinaryIO, socket]
 def rpc_json_object_encode(node: Node) -> typing.Union[dict, str]:
     """Like `stencila.schema.util.object_encode` but with support for JsonRpcError."""
     if isinstance(node, JsonRpcError):
-        return {
-            'code': node.code.value,
-            'message': str(node),
-            'data': node.data
-        }
+        return {"code": node.code.value, "message": str(node), "data": node.data}
 
     return object_encode(node)
 
@@ -42,9 +38,9 @@ def data_to_bytes(data: typing.Any) -> bytes:
 
 def encode_int(number: int) -> bytes:
     """Pack `number` into varint bytes"""
-    buf = b''
+    buf = b""
     while True:
-        to_write = number & 0x7f
+        to_write = number & 0x7F
         number >>= 7
         if number:
             buf += data_to_bytes(to_write | 0x80)
@@ -61,7 +57,7 @@ def read_one(stream: StreamType) -> int:
     """
     char = stream_read(stream, 1)
     if not char:
-        raise EOFError('Unexpected EOF while reading bytes')
+        raise EOFError("Unexpected EOF while reading bytes")
     return ord(char)
 
 
@@ -71,7 +67,7 @@ def read_length_prefix(stream: StreamType) -> int:
     result = 0
     while True:
         i = read_one(stream)
-        result |= (i & 0x7f) << shift
+        result |= (i & 0x7F) << shift
         shift += 7
         if not i & 0x80:
             break
@@ -81,7 +77,7 @@ def read_length_prefix(stream: StreamType) -> int:
 
 def get_stream_buffer(stream: typing.BinaryIO) -> typing.BinaryIO:
     """Get the buffer from a stream, if it exists."""
-    buffer = getattr(stream, 'buffer', None)
+    buffer = getattr(stream, "buffer", None)
     return buffer if buffer else stream
 
 
@@ -116,12 +112,12 @@ def stream_write(stream: StreamType, message: bytes) -> None:
 def message_read(stream: StreamType) -> str:
     """Read a length-prefixed message from the stream"""
     message_len = read_length_prefix(stream)
-    return stream_read(stream, message_len).decode('utf8')
+    return stream_read(stream, message_len).decode("utf8")
 
 
 def message_write(stream: StreamType, message: str) -> None:
     """Write a length-prefixed message to the stream."""
-    bites = message.encode('utf8')
+    bites = message.encode("utf8")
     stream_write(stream, encode_int(len(bites)))
     stream_write(stream, bites)
 
@@ -201,7 +197,12 @@ class StreamServer:
     input_stream: StreamType
     output_stream: StreamType
 
-    def __init__(self, interpreter: Interpreter, input_stream: StreamType, output_stream: StreamType) -> None:
+    def __init__(
+        self,
+        interpreter: Interpreter,
+        input_stream: StreamType,
+        output_stream: StreamType,
+    ) -> None:
         self.interpreter = interpreter
         self.input_stream = input_stream
         self.output_stream = output_stream
@@ -232,35 +233,51 @@ class StreamServer:
             try:
                 request = json.loads(message)
             except Exception as exc:
-                raise JsonRpcError(JsonRpcErrorCode.ParseError, 'Parse error: {}'.format(exc))
+                raise JsonRpcError(
+                    JsonRpcErrorCode.ParseError, "Parse error: {}".format(exc)
+                )
 
-            request_id = request.get('id')
-            method = request.get('method')
-            params = request.get('params')
+            request_id = request.get("id")
+            method = request.get("method")
+            params = request.get("params")
 
-            if method == 'manifest':
+            if method == "manifest":
                 result = Interpreter.MANIFEST
-            elif method in ('compile', 'execute'):
-                node = params.get('node')
+            elif method in ("compile", "execute"):
+                node = params.get("node")
                 if node is None:
-                    raise JsonRpcError(JsonRpcErrorCode.InvalidParams, 'Invalid params: "node" is missing')
+                    raise JsonRpcError(
+                        JsonRpcErrorCode.InvalidParams,
+                        'Invalid params: "node" is missing',
+                    )
                 node = from_dict(node)
-                result = self.interpreter.compile(node) if method == 'compile' else self.interpreter.execute(node)
+                result = (
+                    self.interpreter.compile(node)
+                    if method == "compile"
+                    else self.interpreter.execute(node)
+                )
             else:
-                raise JsonRpcError(JsonRpcErrorCode.MethodNotFound, 'Method not found: {}'.format(method))
+                raise JsonRpcError(
+                    JsonRpcErrorCode.MethodNotFound,
+                    "Method not found: {}".format(method),
+                )
         except JsonRpcError as exc:
             error = exc
         except CapabilityError as exc:
-            error = JsonRpcError(JsonRpcErrorCode.CapabilityError, 'Capability error: {}'.format(exc))
+            error = JsonRpcError(
+                JsonRpcErrorCode.CapabilityError, "Capability error: {}".format(exc)
+            )
         except Exception as exc:  # pylint: disable=broad-except
             logging.exception(exc)
-            error = JsonRpcError(JsonRpcErrorCode.ServerError, 'Internal error: {}'.format(exc))
+            error = JsonRpcError(
+                JsonRpcErrorCode.ServerError, "Internal error: {}".format(exc)
+            )
 
         response: typing.Dict[str, typing.Any] = {
-            'jsonrpc': '2.0',
-            'id': request_id,
-            'result': result,
-            'error': error
+            "jsonrpc": "2.0",
+            "id": request_id,
+            "result": result,
+            "error": error,
         }
 
         return to_json(response)

@@ -1,5 +1,6 @@
 """Custom error classes"""
 
+
 class CapabilityError(Exception):
     """
     Custom error class to indicate that an executor is not capable of performing a method call.
@@ -10,5 +11,9 @@ class CapabilityError(Exception):
     """
 
     def __init__(self, method: str, **kwargs):
-        params = ', '.join(['{} = {}'.format(name, value) for name, value in kwargs.items()])
-        super().__init__('Incapable of method "{}" with params "{}"'.format(method, params))
+        params = ", ".join(
+            ["{} = {}".format(name, value) for name, value in kwargs.items()]
+        )
+        super().__init__(
+            'Incapable of method "{}" with params "{}"'.format(method, params)
+        )

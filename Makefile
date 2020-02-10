@@ -1,4 +1,4 @@
-all: setup clean lint test build docs
+all: setup clean lint format test build docs
 
 setup:
 	pip3 install --user --upgrade -r requirements-dev.txt
@@ -9,6 +9,9 @@ install:
 lint:
 	pylint stencila/pyla
 	mypy stencila/pyla --ignore-missing-imports
+
+format:
+	black .
 
 test:
 	tox

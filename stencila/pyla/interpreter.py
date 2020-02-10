@@ -22,14 +22,36 @@ from io import TextIOWrapper, BytesIO
 
 import ast
 import astor
-from stencila.schema.types import Node, Parameter, CodeChunk, Article, Entity, CodeExpression, \
-    ConstantValidator, EnumValidator, BooleanValidator, NumberValidator, IntegerValidator, StringValidator, \
-    ArrayValidator, TupleValidator, ImageObject, Datatable, DatatableColumn, Function
+from stencila.schema.types import (
+    Node,
+    Parameter,
+    CodeChunk,
+    Article,
+    Entity,
+    CodeExpression,
+    ConstantValidator,
+    EnumValidator,
+    BooleanValidator,
+    NumberValidator,
+    IntegerValidator,
+    StringValidator,
+    ArrayValidator,
+    TupleValidator,
+    ImageObject,
+    Datatable,
+    DatatableColumn,
+    Function,
+)
 from stencila.schema.util import from_json, to_json
 
 from .errors import CapabilityError
-from .code_parsing import CodeChunkExecution, set_code_error, CodeChunkParser, simple_code_chunk_parse, \
-    CodeChunkParseResult
+from .code_parsing import (
+    CodeChunkExecution,
+    set_code_error,
+    CodeChunkParser,
+    simple_code_chunk_parse,
+    CodeChunkParseResult,
+)
 
 try:
     import matplotlib.figure
@@ -46,16 +68,13 @@ except ImportError:
     class MPLFigure:  # type: ignore
         """A fake MPLFigure to prevent ReferenceErrors later."""
 
-
     # pylint: disable=R0903
     class MLPArtist:  # type: ignore
         """A fake MLPArtist to prevent ReferenceErrors later."""
 
-
     # pylint: disable=R0903,C0103
     class silent_list:  # type: ignore
         """A fake silent_list to prevent ReferenceErrors later."""
-
 
     MPL_AVAILABLE = False
 
@@ -68,7 +87,6 @@ except ImportError:
     # pylint: disable=R0903
     class DataFrame:  # type: ignore
         """A fake DataFrame to prevent ReferenceErrors later."""
-
 
     PANDAS_AVAILABLE = False
 
@@ -86,6 +104,7 @@ SKIP_OUTPUT_SEMAPHORE = object()
 
 class CodeTimer:
     """Context handler for timing code, use inside a `with` statement."""
+
     _start_time: datetime.datetime
     duration: typing.Optional[datetime.timedelta] = None
 
@@ -101,7 +120,7 @@ class CodeTimer:
     def duration_seconds(self) -> float:
         """Calculate the duration (time between `__enter__` and `__exit__` in microseconds."""
         if not self.duration:
-            raise RuntimeError('CodeTimer has not yet been run')
+            raise RuntimeError("CodeTimer has not yet been run")
 
         return self.duration.total_seconds()
 
@@ -125,7 +144,7 @@ class DocumentCompilationResult(typing.NamedTuple):
 class DocumentCompiler:
     """Parse an executable document (`Article`) and cache references to its parameters and code nodes."""
 
-    TARGET_LANGUAGE = 'python'
+    TARGET_LANGUAGE = "python"
 
     function_depth: int = 0
 
@@ -141,7 +160,9 @@ class DocumentCompiler:
         self.handle_item(source, dcr)
         return dcr
 
-    def handle_item(self, item: typing.Any, compilation_result: DocumentCompilationResult) -> None:
+    def handle_item(
+        self, item: typing.Any, compilation_result: DocumentCompilationResult
+    ) -> None:
         """
         Parse any kind of dict, list of Entity.
 
@@ -153,12 +174,14 @@ class DocumentCompiler:
             self.traverse_list(item, compilation_result)
         elif isinstance(item, Entity):
             if isinstance(item, (CodeChunk, CodeExpression)):
-                if item.programmingLanguage == self.TARGET_LANGUAGE:  # Only add Python code
+                if (
+                    item.programmingLanguage == self.TARGET_LANGUAGE
+                ):  # Only add Python code
                     self.handle_code(item, compilation_result)
 
             elif isinstance(item, Parameter) and self.function_depth == 0:
                 compilation_result.parameters.append(item)
-                LOGGER.debug('Adding %s', type(item))
+                LOGGER.debug("Adding %s", type(item))
 
             if isinstance(item, Function):
                 # This prevents treating a `Parameter` found inside `Function` as a document parameter
@@ -170,8 +193,10 @@ class DocumentCompiler:
                 self.function_depth -= 1
 
     @staticmethod
-    def handle_code(item: typing.Union[CodeChunk, CodeExpression],
-                    compilation_result: DocumentCompilationResult) -> None:
+    def handle_code(
+        item: typing.Union[CodeChunk, CodeExpression],
+        compilation_result: DocumentCompilationResult,
+    ) -> None:
         """Parse a CodeChunk or CodeExpression and add it to `compilation_result.code` list."""
         if isinstance(item, CodeChunk):
             cc_result, item = Interpreter.compile_code_chunk(item)
@@ -184,14 +209,18 @@ class DocumentCompiler:
                 set_code_error(item, exc)
             code_to_add = item
         compilation_result.code.append(code_to_add)
-        LOGGER.debug('Adding %s', type(item))
+        LOGGER.debug("Adding %s", type(item))
 
-    def traverse_dict(self, _dict: dict, compilation_result: DocumentCompilationResult) -> None:
+    def traverse_dict(
+        self, _dict: dict, compilation_result: DocumentCompilationResult
+    ) -> None:
         """Traverse into each item of a dict."""
         for child in _dict.values():
             self.handle_item(child, compilation_result)
 
-    def traverse_list(self, _list: typing.List, compilation_result: DocumentCompilationResult) -> None:
+    def traverse_list(
+        self, _list: typing.List, compilation_result: DocumentCompilationResult
+    ) -> None:
         """Traverse into each element in a list."""
         for child in _list:
             self.handle_item(child, compilation_result)
@@ -204,29 +233,25 @@ class Interpreter:
     List of values for the `programmingLanguage` property that are handled
     by this interpreter.
     """
-    PROGRAMMING_LANGUAGES = ['py', 'python']
+    PROGRAMMING_LANGUAGES = ["py", "python"]
 
     """
     JSON Schema specification of the types of nodes that this intertpreter's
     `compile` and `execute` methods are capable of handling
     """
     CODE_CAPABILITIES = {
-        'type': 'object',
-        'required': ['node'],
-        'properties': {
-            'node': {
-                'type': 'object',
-                'required': ['type', 'programmingLanguage'],
-                'properties': {
-                    'type': {
-                        'enum': ['CodeChunk', 'CodeExpression']
-                    },
-                    'programmingLanguage': {
-                        'enum': PROGRAMMING_LANGUAGES
-                    }
-                }
+        "type": "object",
+        "required": ["node"],
+        "properties": {
+            "node": {
+                "type": "object",
+                "required": ["type", "programmingLanguage"],
+                "properties": {
+                    "type": {"enum": ["CodeChunk", "CodeExpression"]},
+                    "programmingLanguage": {"enum": PROGRAMMING_LANGUAGES},
+                },
             }
-        }
+        },
     }
 
     """
@@ -237,18 +262,15 @@ class Interpreter:
     interface.
     """
     MANIFEST = {
-        'version': 1,
-        'capabilities': {
-            'compile': CODE_CAPABILITIES,
-            'execute': CODE_CAPABILITIES
-        },
-        'addresses': {
-            'stdio': {
-                'type': 'stdio',
-                'command': sys.executable,
-                'args': ['-m', 'stencila.pyla', 'serve']
+        "version": 1,
+        "capabilities": {"compile": CODE_CAPABILITIES, "execute": CODE_CAPABILITIES},
+        "addresses": {
+            "stdio": {
+                "type": "stdio",
+                "command": sys.executable,
+                "args": ["-m", "stencila.pyla", "serve"],
             }
-        }
+        },
     }
 
     globals: typing.Dict[str, typing.Any]
@@ -259,7 +281,9 @@ class Interpreter:
         self.locals = {}
 
     @staticmethod
-    def compile_code_chunk(chunk: CodeChunk) -> typing.Tuple[CodeChunkParseResult, CodeChunk]:
+    def compile_code_chunk(
+        chunk: CodeChunk,
+    ) -> typing.Tuple[CodeChunkParseResult, CodeChunk]:
         """
         Compile a `CodeChunk`.
 
@@ -284,9 +308,11 @@ class Interpreter:
         """Compile a `CodeChunk`"""
         if isinstance(node, CodeChunk) and Interpreter.is_python_code(node):
             return Interpreter.compile_code_chunk(node)[1]
-        raise CapabilityError('compile', node=node)
+        raise CapabilityError("compile", node=node)
 
-    def execute(self, node: Node, parameter_values: typing.Dict[str, typing.Any] = None) -> Node:
+    def execute(
+        self, node: Node, parameter_values: typing.Dict[str, typing.Any] = None
+    ) -> Node:
         """Execute a `CodeChunk` or `CodeExpression`"""
         _locals = self.locals
         if parameter_values is not None:
@@ -299,32 +325,39 @@ class Interpreter:
             return self.execute_code_chunk(cce, _locals)
         if isinstance(node, CodeChunkExecution):
             return self.execute_code_chunk(node, _locals)
-        raise CapabilityError('execute', node=node)
+        raise CapabilityError("execute", node=node)
 
     @staticmethod
     def is_python_code(code: typing.Union[CodeChunk, CodeExpression]) -> bool:
         """Is a `CodeChunk` or `CodeExpression` Python code?"""
         return code.programmingLanguage.lower() in Interpreter.PROGRAMMING_LANGUAGES
 
-    def execute_code_expression(self, expression: CodeExpression,
-                                _locals: typing.Dict[str, typing.Any]) -> CodeExpression:
+    def execute_code_expression(
+        self, expression: CodeExpression, _locals: typing.Dict[str, typing.Any]
+    ) -> CodeExpression:
         """Evaluate `CodeExpression.text`, and get the result. Catch any exception the occurs."""
         try:
             # pylint: disable=W0123  # Disable warning that eval is being used.
-            expression.output = self.decode_output(eval(expression.text, self.globals, _locals))
+            expression.output = self.decode_output(
+                eval(expression.text, self.globals, _locals)
+            )
         # pylint: disable=W0703  # we really don't know what Exception some eval'd code might raise.
         except Exception as exc:
             set_code_error(expression, exc)
 
         return expression
 
-    def execute_code_chunk(self, chunk_execution: CodeChunkExecution,
-                           _locals: typing.Dict[str, typing.Any]) -> CodeChunk:
+    def execute_code_chunk(
+        self, chunk_execution: CodeChunkExecution, _locals: typing.Dict[str, typing.Any]
+    ) -> CodeChunk:
         """Execute a `CodeChunk` that has been parsed and stored in a `CodeChunkExecution`."""
         chunk, parse_result = chunk_execution
 
         if parse_result.chunk_ast is None:
-            LOGGER.info('Not executing CodeChunk without AST: %s', chunk.text[:CHUNK_PREVIEW_LENGTH])
+            LOGGER.info(
+                "Not executing CodeChunk without AST: %s",
+                chunk.text[:CHUNK_PREVIEW_LENGTH],
+            )
             return chunk
 
         cc_outputs: typing.List[typing.Any] = []
@@ -332,7 +365,9 @@ class Interpreter:
         duration = 0.0
 
         for statement in parse_result.chunk_ast.body:
-            duration, error_occurred = self.execute_statement(statement, chunk, _locals, cc_outputs, duration)
+            duration, error_occurred = self.execute_statement(
+                statement, chunk, _locals, cc_outputs, duration
+            )
 
             if error_occurred:
                 break  # stop executing the rest of the statements in the chunk after capturing the outputs
@@ -342,14 +377,18 @@ class Interpreter:
         if MPL_AVAILABLE:
             # Because of the way matplotlib might progressively build an image, only keep the last MPL that was
             # generated for a specific code chunk
-            mpl_output_indexes = [i for i, output in enumerate(cc_outputs) if self.value_is_mpl(output)]
+            mpl_output_indexes = [
+                i for i, output in enumerate(cc_outputs) if self.value_is_mpl(output)
+            ]
 
             if mpl_output_indexes:
                 for i in reversed(mpl_output_indexes[:-1]):
                     # remove all but the last mpl
                     cc_outputs.pop(i)
 
-                new_last_index = mpl_output_indexes[-1] - (len(mpl_output_indexes) - 1)  # output will have shifted back
+                new_last_index = mpl_output_indexes[-1] - (
+                    len(mpl_output_indexes) - 1
+                )  # output will have shifted back
 
                 cc_outputs[new_last_index] = self.decode_mpl()
 
@@ -357,8 +396,14 @@ class Interpreter:
 
         return chunk
 
-    def execute_statement(self, statement: ast.stmt, chunk: CodeChunk, _locals: typing.Dict[str, typing.Any],
-                          cc_outputs: typing.List[str], duration: float) -> typing.Tuple[float, bool]:
+    def execute_statement(
+        self,
+        statement: ast.stmt,
+        chunk: CodeChunk,
+        _locals: typing.Dict[str, typing.Any],
+        cc_outputs: typing.List[str],
+        duration: float,
+    ) -> typing.Tuple[float, bool]:
         """
         Execute a single AST statement.
 
@@ -366,7 +411,9 @@ class Interpreter:
         """
         error_occurred = False
 
-        capture_result, code_to_run, run_function = self.parse_statement_runtime(statement)
+        capture_result, code_to_run, run_function = self.parse_statement_runtime(
+            statement
+        )
         stdout = StdoutBuffer(BytesIO(), sys.stdout.encoding)
         result = None
 
@@ -386,12 +433,14 @@ class Interpreter:
         stdout.seek(0)
         std_out_output = stdout.buffer.read()
         if std_out_output:
-            cc_outputs.append(std_out_output.decode('utf8'))
+            cc_outputs.append(std_out_output.decode("utf8"))
 
         # could save a variable by returning `duration` as `None` if an error occurs but I think that breaks readability
         return duration, error_occurred
 
-    def add_output(self, cc_outputs: typing.List[typing.Any], result: typing.Any) -> None:
+    def add_output(
+        self, cc_outputs: typing.List[typing.Any], result: typing.Any
+    ) -> None:
         """
         Add an output to cc_outputs.
 
@@ -427,7 +476,7 @@ class Interpreter:
             run_function = exec
             mod = ast.Module()
             mod.body = [statement]
-            code_to_run = compile(mod, '<ast>', 'exec')
+            code_to_run = compile(mod, "<ast>", "exec")
         return capture_result, code_to_run, run_function
 
     @staticmethod
@@ -436,9 +485,11 @@ class Interpreter:
         if not MPL_AVAILABLE:
             return False
 
-        return isinstance(value, (MPLFigure, MPLArtist)) or (isinstance(value, list) and
-                                                             len(value) == 1 and
-                                                             isinstance(value[0], MPLArtist))
+        return isinstance(value, (MPLFigure, MPLArtist)) or (
+            isinstance(value, list)
+            and len(value) == 1
+            and isinstance(value[0], MPLArtist)
+        )
 
     @staticmethod
     def decode_mpl() -> ImageObject:
@@ -448,8 +499,8 @@ class Interpreter:
         The `matplotlib.pyplot.savefig` function just saves the current MPL figure that's in the context.
         """
         image = BytesIO()
-        matplotlib.pyplot.savefig(image, format='png')
-        src = 'data:image/png;base64,' + base64.encodebytes(image.getvalue()).decode()
+        matplotlib.pyplot.savefig(image, format="png")
+        src = "data:image/png;base64," + base64.encodebytes(image.getvalue()).decode()
         return ImageObject(src)
 
     @staticmethod
@@ -475,7 +526,9 @@ class Interpreter:
                 validator = None
 
             columns.append(
-                DatatableColumn(column_name, values, validator=ArrayValidator(items=validator))
+                DatatableColumn(
+                    column_name, values, validator=ArrayValidator(items=validator)
+                )
             )
 
         return Datatable(columns)
@@ -512,6 +565,7 @@ class ParameterParser:
 
     The `ArgumentParser` will fail if any required parameters are not passed in.
     """
+
     parameters: typing.Dict[str, Parameter]
     parameter_values: typing.Dict[str, typing.Any]
 
@@ -527,25 +581,29 @@ class ParameterParser:
         then the `ArgumentParser` class will cause the process to exit.
         """
         if not self.parameters:
-            LOGGER.debug('No parameters passed to parse_cli_args')
+            LOGGER.debug("No parameters passed to parse_cli_args")
             return
 
-        param_parser = argparse.ArgumentParser(description='Parse Parameters')
+        param_parser = argparse.ArgumentParser(description="Parse Parameters")
 
         for param in self.parameters.values():
             if not isinstance(param.validator, ConstantValidator):
-                param_parser.add_argument('--' + param.name, dest=param.name, required=param.required)
+                param_parser.add_argument(
+                    "--" + param.name, dest=param.name, required=param.required
+                )
 
         args, _ = param_parser.parse_known_args(cli_args)
 
-        LOGGER.debug('Parsed command line args: %s', args)
+        LOGGER.debug("Parsed command line args: %s", args)
 
         for param_name in self.parameters:
             cli_value = getattr(args, param_name, None)
             if not cli_value and self.parameters[param_name].default:
                 self.parameter_values[param_name] = self.parameters[param_name].default
             else:
-                self.parameter_values[param_name] = self.deserialize_parameter(self.parameters[param_name], cli_value)
+                self.parameter_values[param_name] = self.deserialize_parameter(
+                    self.parameters[param_name], cli_value
+                )
 
     @staticmethod
     def deserialize_parameter(parameter: Parameter, value: typing.Any) -> typing.Any:
@@ -556,11 +614,13 @@ class ParameterParser:
 
         if isinstance(parameter.validator, EnumValidator):
             if value not in parameter.validator.values:
-                raise TypeError('{} not found in enum values for {}'.format(value, parameter.name))
+                raise TypeError(
+                    "{} not found in enum values for {}".format(value, parameter.name)
+                )
             return value
 
         if isinstance(parameter.validator, BooleanValidator):
-            return value.lower() in ('true', 'yes', '1', 't')
+            return value.lower() in ("true", "yes", "1", "t")
 
         conversion_function: typing.Optional[typing.Callable] = None
 
@@ -579,14 +639,14 @@ def read_input(input_file: str) -> Article:
 
     If the path is "-" then read from stdin. If the decoded object is not an `Article` then raise a `TypeError`.
     """
-    if input_file == '-':
+    if input_file == "-":
         j = sys.stdin.read()
     else:
         with open(input_file) as i:
             j = i.read()
     article = from_json(j)
     if not isinstance(article, Article):
-        raise TypeError('Decoded JSON was not an Article')
+        raise TypeError("Decoded JSON was not an Article")
     return article
 
 
@@ -596,14 +656,16 @@ def write_output(output_file: str, article: Article) -> None:
 
     If the path is "-" then output to stdout.
     """
-    if output_file == '-':
+    if output_file == "-":
         sys.stdout.write(to_json(article))
     else:
-        with open(output_file, 'w') as file:
+        with open(output_file, "w") as file:
             file.write(to_json(article))
 
 
-def execute_compilation(compilation_result: DocumentCompilationResult, parameter_flags: typing.List[str]) -> None:
+def execute_compilation(
+    compilation_result: DocumentCompilationResult, parameter_flags: typing.List[str]
+) -> None:
     """Compile an `Article`, and interpret it with the given parameters (in a format that would be read from CLI)."""
     param_parser = ParameterParser(compilation_result.parameters)
     param_parser.parse_cli_args(parameter_flags)
@@ -620,8 +682,18 @@ def compile_article(article: Article) -> DocumentCompilationResult:
 def execute_from_cli(cli_args: typing.List[str], compile_only=False) -> None:
     """Read arguments from the CLI then parse an `Article` in JSON format, execute it, and output it somewhere."""
     cli_parser = argparse.ArgumentParser()
-    cli_parser.add_argument('input_file', help='File to read from or "-" to read from stdin', nargs='?', default='-')
-    cli_parser.add_argument('output_file', help='File to write to or "-" to write to stdout', nargs='?', default='-')
+    cli_parser.add_argument(
+        "input_file",
+        help='File to read from or "-" to read from stdin',
+        nargs="?",
+        default="-",
+    )
+    cli_parser.add_argument(
+        "output_file",
+        help='File to write to or "-" to write to stdout',
+        nargs="?",
+        default="-",
+    )
 
     args, _ = cli_parser.parse_known_args(cli_args)
 

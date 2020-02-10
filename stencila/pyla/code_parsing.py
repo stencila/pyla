@@ -6,9 +6,22 @@ import logging
 import traceback
 import typing
 
-from stencila.schema.types import SoftwareSourceCode, Function, Variable, CodeError, CodeChunk, ValidatorTypes, \
-    BooleanValidator, StringValidator, IntegerValidator, NumberValidator, ArrayValidator, TupleValidator, \
-    CodeExpression, Parameter
+from stencila.schema.types import (
+    SoftwareSourceCode,
+    Function,
+    Variable,
+    CodeError,
+    CodeChunk,
+    ValidatorTypes,
+    BooleanValidator,
+    StringValidator,
+    IntegerValidator,
+    NumberValidator,
+    ArrayValidator,
+    TupleValidator,
+    CodeExpression,
+    Parameter,
+)
 
 ImportsType = typing.List[typing.Union[str, SoftwareSourceCode]]
 OptionalStringList = typing.Optional[typing.List[str]]
@@ -19,6 +32,7 @@ LOGGER.addHandler(logging.NullHandler())
 # pylint: disable=R0902
 class CodeChunkParseResult:
     """The result of parsing a `CodeChunk`."""
+
     chunk_ast: typing.Optional[ast.Module]
     _imports: ImportsType
     _assigns: typing.List[str]
@@ -29,15 +43,17 @@ class CodeChunkParseResult:
     error: typing.Optional[CodeError]
 
     # pylint: disable=R0913
-    def __init__(self,
-                 chunk_ast: typing.Optional[ast.Module] = None,
-                 imports: typing.Optional[ImportsType] = None,
-                 assigns: OptionalStringList = None,
-                 declares: OptionalStringList = None,
-                 alters: OptionalStringList = None,
-                 uses: OptionalStringList = None,
-                 reads: OptionalStringList = None,
-                 error: typing.Optional[CodeError] = None):
+    def __init__(
+        self,
+        chunk_ast: typing.Optional[ast.Module] = None,
+        imports: typing.Optional[ImportsType] = None,
+        assigns: OptionalStringList = None,
+        declares: OptionalStringList = None,
+        alters: OptionalStringList = None,
+        uses: OptionalStringList = None,
+        reads: OptionalStringList = None,
+        error: typing.Optional[CodeError] = None,
+    ):
         self.chunk_ast = chunk_ast
         self.imports = imports or []
         self.assigns = assigns or []
@@ -47,7 +63,9 @@ class CodeChunkParseResult:
         self.reads = reads or []
         self.error = error
 
-    def combined_code_imports(self, existing_imports: typing.Optional[ImportsType]) -> typing.Optional[ImportsType]:
+    def combined_code_imports(
+        self, existing_imports: typing.Optional[ImportsType]
+    ) -> typing.Optional[ImportsType]:
         """
         Combine a list of existing imports (from a CodeChunk) with the parsed `imports`.
 
@@ -57,7 +75,7 @@ class CodeChunkParseResult:
         if existing_imports is None or self.imports is None:
             return self.imports
 
-        if '' in existing_imports:
+        if "" in existing_imports:
             return existing_imports
 
         imports = list(existing_imports)  # copy the list
@@ -92,7 +110,9 @@ class CodeChunkParseResult:
         self._assigns = assigns
 
     @property
-    def declares(self) -> typing.Optional[typing.List[typing.Union[Function, Variable]]]:
+    def declares(
+        self,
+    ) -> typing.Optional[typing.List[typing.Union[Function, Variable]]]:
         """Get the `declares` list or `None` if the list is empty."""
         if not self._declares:
             return None
@@ -138,14 +158,14 @@ class CodeChunkParseResult:
     def to_dict(self):
         """Return all attributes as a dictionary.."""
         return {
-            'chunk_ast': self.chunk_ast,
-            'imports': self.imports,
-            'assigns': self.assigns,
-            'declares': self.declares,
-            'alters': self.alters,
-            'uses': self.uses,
-            'reads': self.reads,
-            'error': self.error
+            "chunk_ast": self.chunk_ast,
+            "imports": self.imports,
+            "assigns": self.assigns,
+            "declares": self.declares,
+            "alters": self.alters,
+            "uses": self.uses,
+            "reads": self.reads,
+            "error": self.error,
         }
 
 
@@ -155,22 +175,25 @@ class CodeChunkExecution(typing.NamedTuple):
 
     This is so the AST does not have to be parsed twice (once during parsing and again during execution).
     """
+
     code_chunk: CodeChunk
     parse_result: CodeChunkParseResult
 
 
-def annotation_name_to_validator(name: typing.Optional[str]) -> typing.Optional[ValidatorTypes]:
+def annotation_name_to_validator(
+    name: typing.Optional[str],
+) -> typing.Optional[ValidatorTypes]:
     """Parse a Python annotation string (basically a type name) and convert to a `Validator` type."""
     if name is None:
         return None
 
     return {
-        'bool': BooleanValidator(),
-        'str': StringValidator(),
-        'int': IntegerValidator(),
-        'float': NumberValidator(),
-        'list': ArrayValidator(),
-        'tuple': TupleValidator()
+        "bool": BooleanValidator(),
+        "str": StringValidator(),
+        "int": IntegerValidator(),
+        "float": NumberValidator(),
+        "list": ArrayValidator(),
+        "tuple": TupleValidator(),
     }.get(name)
 
 
@@ -178,7 +201,7 @@ def mode_is_read(mode: str) -> bool:
     """
     Determine if an open mode is a read. Opening a file with `w+` or `a+` allows read and write.
     """
-    return 'r' in mode or '+' in mode
+    return "r" in mode or "+" in mode
 
 
 def parse_open_filename(open_call: ast.Call) -> typing.Optional[str]:
@@ -190,7 +213,7 @@ def parse_open_filename(open_call: ast.Call) -> typing.Optional[str]:
     """
     filename = None
 
-    if hasattr(open_call, 'args'):
+    if hasattr(open_call, "args"):
         if len(open_call.args) >= 1:
             if not isinstance(open_call.args[0], ast.Str):
                 return None
@@ -203,15 +226,15 @@ def parse_open_filename(open_call: ast.Call) -> typing.Optional[str]:
                 if not mode_is_read(open_call.args[1].s):
                     return None
 
-    if hasattr(open_call, 'keywords'):
+    if hasattr(open_call, "keywords"):
         for keyword in open_call.keywords:
             if not isinstance(keyword.value, ast.Str):
                 continue
 
-            if keyword.arg == 'file':
+            if keyword.arg == "file":
                 filename = keyword.value.s
 
-            if keyword.arg == 'mode':
+            if keyword.arg == "mode":
                 if not mode_is_read(keyword.value.s):
                     return None
 
@@ -223,11 +246,14 @@ def exception_to_code_error(exception: Exception) -> CodeError:
     return CodeError(
         errorType=type(exception).__name__,
         errorMessage=str(exception),
-        stackTrace=traceback.format_exc()
+        stackTrace=traceback.format_exc(),
     )
 
-def set_code_error(code: typing.Union[CodeChunk, CodeExpression],
-                   error: typing.Union[Exception, CodeError]) -> None:
+
+def set_code_error(
+    code: typing.Union[CodeChunk, CodeExpression],
+    error: typing.Union[Exception, CodeError],
+) -> None:
     """
     Add the `CodeError` to a `CodeChunk` or `CodeExpression` `errors` list.
 
@@ -304,7 +330,9 @@ class CodeChunkParser:
         any seen names to prevent duplicates (e.g. a variable would not be both declared [in `declares` list] and then
         used [in `uses` list]).
         """
-        if name in self.name_skip:  # we can temporarily skip names we are not interested in (e.g. inside lambdas)
+        if (
+            name in self.name_skip
+        ):  # we can temporarily skip names we are not interested in (e.g. inside lambdas)
             return
 
         if name not in self.seen_vars and name not in target:
@@ -347,7 +375,7 @@ class CodeChunkParser:
         # means the parser should try to find it. This is a basic check so there might not be
         # one (like if the code did , but if 'open(' is NOT in the string then there definitely
         # ISN'T one
-        search_for_open = 'open(' in chunk.text
+        search_for_open = "open(" in chunk.text
 
         for statement in chunk_ast.body:
             self.parse_statement(statement)
@@ -355,14 +383,25 @@ class CodeChunkParser:
         if search_for_open:
             self._parse_file_reads(chunk_ast)
 
-        return CodeChunkParseResult(chunk_ast, self.imports, self.assigns, self.declares, self.alters, self.uses,
-                                    self.reads)
+        return CodeChunkParseResult(
+            chunk_ast,
+            self.imports,
+            self.assigns,
+            self.declares,
+            self.alters,
+            self.uses,
+            self.reads,
+        )
 
     # pylint: disable=R0912,R0915 # Too many branches/statements warning but this is kind of a special case
-    def parse_statement(self,
-                        statement: typing.Union[
-                            ast.stmt, ast.expr, typing.Sequence[typing.Union[ast.stmt, ast.expr, ast.comprehension]]]
-                        ) -> None:
+    def parse_statement(
+        self,
+        statement: typing.Union[
+            ast.stmt,
+            ast.expr,
+            typing.Sequence[typing.Union[ast.stmt, ast.expr, ast.comprehension]],
+        ],
+    ) -> None:
         """General statement parser that delegates to parsers for specific parser types."""
         if isinstance(statement, list):
             for sub_statement in statement:
@@ -415,13 +454,26 @@ class CodeChunkParser:
             self._parse_lambda(statement)
         elif isinstance(statement, ast.UnaryOp):
             self._parse_unary_op(statement)
-        elif isinstance(statement, (
-                ast.ClassDef, ast.Num, ast.Str, ast.Pass, ast.NameConstant, ast.Bytes, ast.Break, ast.Continue)):
+        elif isinstance(
+            statement,
+            (
+                ast.ClassDef,
+                ast.Num,
+                ast.Str,
+                ast.Pass,
+                ast.NameConstant,
+                ast.Bytes,
+                ast.Break,
+                ast.Continue,
+            ),
+        ):
             pass
         else:
-            LOGGER.warning('Unrecognized statement %s', statement)
+            LOGGER.warning("Unrecognized statement %s", statement)
 
-    def _parse_import(self, statement: typing.Union[ast.ImportFrom, ast.Import]) -> None:
+    def _parse_import(
+        self, statement: typing.Union[ast.ImportFrom, ast.Import]
+    ) -> None:
         """
         Parse 'import ...' or 'from ... import ...' statements.
 
@@ -436,8 +488,9 @@ class CodeChunkParser:
             if module is not None and module not in self.imports:
                 self.imports.append(module)
 
-    def _parse_reference(self,
-                         ref: typing.Optional[typing.Union[ast.stmt, ast.expr, ast.slice]]) -> typing.Optional[str]:
+    def _parse_reference(
+        self, ref: typing.Optional[typing.Union[ast.stmt, ast.expr, ast.slice]]
+    ) -> typing.Optional[str]:
         """
         Attempts to get the final name of a reference (usually an `Index` used in a subscript).
 
@@ -446,14 +499,16 @@ class CodeChunkParser:
         if isinstance(ref, ast.Name):
             return ref.id
 
-        if not isinstance(ref, ast.Subscript) and hasattr(ref, 'value'):
+        if not isinstance(ref, ast.Subscript) and hasattr(ref, "value"):
             # for some reason isinstance (ref, ast.Index) doesn't work, so the hasattr check is a
             # workaround to check for an ast.Index object
             return self._parse_reference(ref.value)  # type: ignore
 
         return None
 
-    def _parse_assigns(self, statement: typing.Union[ast.Assign, ast.AnnAssign]) -> None:
+    def _parse_assigns(
+        self, statement: typing.Union[ast.Assign, ast.AnnAssign]
+    ) -> None:
         """
         Parse an assigment and try to choose the best place to store it.
 
@@ -468,7 +523,7 @@ class CodeChunkParser:
         elif isinstance(statement, ast.AnnAssign):
             targets = [statement.target]
         else:
-            raise TypeError('{} has no target or targets'.format(statement))
+            raise TypeError("{} has no target or targets".format(statement))
 
         for target in targets:
             if isinstance(target, ast.Attribute):
@@ -483,25 +538,29 @@ class CodeChunkParser:
 
             if isinstance(target, ast.Name):
                 if isinstance(statement, ast.AnnAssign):
-                    annotation_name = statement.annotation.id if isinstance(statement.annotation, ast.Name) else None
+                    annotation_name = (
+                        statement.annotation.id
+                        if isinstance(statement.annotation, ast.Name)
+                        else None
+                    )
                     self.add_variable(target.id, annotation_name)
                 else:
                     self.add_name(target.id, self.assigns)
 
-        statement_value = getattr(statement, 'value', None)
+        statement_value = getattr(statement, "value", None)
         if statement_value is not None:
             self.parse_statement(statement_value)
 
     def _recurse_attribute(self, ref: typing.Union[ast.stmt, ast.expr]) -> str:
         """Recurse through an attribute to get the actual variable (e.g. `x.y.z` -> `x`)."""
-        if hasattr(ref, 'value'):
+        if hasattr(ref, "value"):
             if isinstance(ref.value, ast.Attribute):  # type: ignore
                 return self._recurse_attribute(ref.value)  # type: ignore
 
             if isinstance(ref.value, ast.Name):  # type: ignore
                 return ref.value.id  # type: ignore
 
-        raise TypeError('Can\'t get name of {}'.format(ref))
+        raise TypeError("Can't get name of {}".format(ref))
 
     def _parse_attribute(self, statement: ast.Attribute) -> None:
         """
@@ -515,14 +574,16 @@ class CodeChunkParser:
         """
         self.add_name(self._recurse_attribute(statement), self.uses)
 
-    def _parse_subscript(self, statement: ast.Subscript, in_assign: bool) -> typing.Optional[str]:
+    def _parse_subscript(
+        self, statement: ast.Subscript, in_assign: bool
+    ) -> typing.Optional[str]:
         """
         Parse a subscript (list access).
 
         Handles single element access (`a[b]`) and slices (`a[b:c:d]`).
         """
         if isinstance(statement.slice, ast.Slice):
-            for ref_name in ('lower', 'step', 'upper'):
+            for ref_name in ("lower", "step", "upper"):
                 ref = getattr(statement.slice, ref_name, None)
                 name = self._parse_reference(ref)
                 if name is not None:
@@ -540,7 +601,9 @@ class CodeChunkParser:
                 self.add_name(value_ref, self.uses)
             return value_ref
 
-        if isinstance(statement, ast.Subscript) and isinstance(statement.value, ast.Subscript):
+        if isinstance(statement, ast.Subscript) and isinstance(
+            statement.value, ast.Subscript
+        ):
             return self._parse_subscript(statement.value, in_assign)
 
         self.parse_statement(statement.value)
@@ -557,10 +620,10 @@ class CodeChunkParser:
 
     def _parse_call(self, statement: ast.Call) -> None:
         """Parse a function call to extract the variables used."""
-        if hasattr(statement, 'args'):
+        if hasattr(statement, "args"):
             self.parse_statement(statement.args)
 
-        if hasattr(statement, 'keywords'):
+        if hasattr(statement, "keywords"):
             for keyword in statement.keywords:
                 self.parse_statement(keyword.value)
 
@@ -569,14 +632,20 @@ class CodeChunkParser:
         if statement.name in self.seen_vars:
             return
 
-        return_ann = statement.returns.id if isinstance(statement.returns, ast.Name) else None
+        return_ann = (
+            statement.returns.id if isinstance(statement.returns, ast.Name) else None
+        )
 
-        func = Function(name=statement.name, returns=annotation_name_to_validator(return_ann), parameters=[])
+        func = Function(
+            name=statement.name,
+            returns=annotation_name_to_validator(return_ann),
+            parameters=[],
+        )
 
         for i, arg in enumerate(statement.args.args):
             param = Parameter(arg.arg)
 
-            if arg.annotation and hasattr(arg.annotation, 'id'):
+            if arg.annotation and hasattr(arg.annotation, "id"):
                 param.validator = annotation_name_to_validator(arg.annotation.id)  # type: ignore
 
             default_index = len(statement.args.defaults) - len(statement.args.args) + i
@@ -601,10 +670,14 @@ class CodeChunkParser:
             func.parameters.append(param)
 
         if statement.args.vararg:
-            func.parameters.append(Parameter(name=statement.args.vararg.arg, required=False, repeats=True))
+            func.parameters.append(
+                Parameter(name=statement.args.vararg.arg, required=False, repeats=True)
+            )
 
         if statement.args.kwarg:
-            func.parameters.append(Parameter(name=statement.args.kwarg.arg, required=False, extends=True))
+            func.parameters.append(
+                Parameter(name=statement.args.kwarg.arg, required=False, extends=True)
+            )
 
         self.seen_vars.append(func.name)
         self.declares.append(func)
@@ -681,7 +754,9 @@ class CodeChunkParser:
         """Parse a `with` statement (i.e. parse the statements in its `body`)."""
         self.parse_statement(statement.body)
 
-    def _parse_list_or_set_comprehension(self, statement: typing.Union[ast.ListComp, ast.SetComp]) -> None:
+    def _parse_list_or_set_comprehension(
+        self, statement: typing.Union[ast.ListComp, ast.SetComp]
+    ) -> None:
         """Parse a list or set comprehension (they have the same interface)."""
         if not isinstance(statement.elt, ast.Name):
             # skip simple name assigns since they aren't really usable after the loop
@@ -697,9 +772,9 @@ class CodeChunkParser:
         """Parse a generator such as used in a comprehension."""
         target = statement.target
 
-        if hasattr(target, 'elts'):
+        if hasattr(target, "elts"):
             self.name_skip = [name.id for name in target.elts]  # type: ignore
-        elif hasattr(target, 'id'):
+        elif hasattr(target, "id"):
             self.name_skip = [target.id]  # type: ignore
 
         self.parse_statement(statement.iter)
@@ -709,7 +784,9 @@ class CodeChunkParser:
 
     def _parse_lambda(self, statement: ast.Lambda) -> None:
         # add the arguments to the name_skip so that they won't be added to 'uses' in the body parse
-        self.name_skip = [arg.arg for arg in statement.args.args]  # I feel like a pirate
+        self.name_skip = [
+            arg.arg for arg in statement.args.args
+        ]  # I feel like a pirate
 
         self.parse_statement(statement.body)
 
@@ -725,8 +802,11 @@ class CodeChunkParser:
         Add any file reads (any `open` calls that aren't exclusively writes) to the `reads` list.
         """
         for node in ast.walk(chunk_ast):
-            if isinstance(node, ast.Call) and isinstance(getattr(node, 'func', None),
-                                                         ast.Name) and node.func.id == 'open':  # type: ignore
+            if (
+                isinstance(node, ast.Call)
+                and isinstance(getattr(node, "func", None), ast.Name)
+                and node.func.id == "open"  # type: ignore
+            ):
                 filename = parse_open_filename(node)
 
                 if filename and filename not in self.reads:

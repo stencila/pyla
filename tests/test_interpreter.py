@@ -2,8 +2,13 @@ import unittest.mock
 from stencila.schema.types import CodeExpression, CodeChunk, Article
 
 from stencila.pyla.code_parsing import CodeChunkExecution, CodeChunkParser
-from stencila.pyla.interpreter import Interpreter, execute_compilation, compile_article, DocumentCompilationResult, \
-    SKIP_OUTPUT_SEMAPHORE
+from stencila.pyla.interpreter import (
+    Interpreter,
+    execute_compilation,
+    compile_article,
+    DocumentCompilationResult,
+    SKIP_OUTPUT_SEMAPHORE,
+)
 
 
 def execute_code_chunk(text: str) -> CodeChunk:
@@ -13,32 +18,32 @@ def execute_code_chunk(text: str) -> CodeChunk:
 
 
 def test_execute_simple_code_expression():
-    ce = CodeExpression('4 + 5')
+    ce = CodeExpression("4 + 5")
     Interpreter().execute(ce)
     assert ce.output == 9
 
 
 def test_execute_parameterised_code_expression():
-    ce = CodeExpression('p1 + p2')
-    Interpreter().execute(ce, {'p1': 1, 'p2': 10})
+    ce = CodeExpression("p1 + p2")
+    Interpreter().execute(ce, {"p1": 1, "p2": 10})
     assert ce.output == 11
 
 
 def test_catch_code_expression_error():
-    ce = CodeExpression('1 / 0')
+    ce = CodeExpression("1 / 0")
     Interpreter().execute(ce)
     assert ce.output is None
-    assert ce.errors[0].errorType == 'ZeroDivisionError'
-    assert ce.errors[0].errorMessage == 'division by zero'
+    assert ce.errors[0].errorType == "ZeroDivisionError"
+    assert ce.errors[0].errorMessage == "division by zero"
     assert ce.errors[0].stackTrace is not None
 
 
-@unittest.mock.patch('stencila.pyla.interpreter.LOGGER')
-@unittest.mock.patch('stencila.pyla.interpreter.exec')
-@unittest.mock.patch('stencila.pyla.interpreter.eval')
+@unittest.mock.patch("stencila.pyla.interpreter.LOGGER")
+@unittest.mock.patch("stencila.pyla.interpreter.exec")
+@unittest.mock.patch("stencila.pyla.interpreter.eval")
 def test_execute_code_chunk_without_ast(mock_eval, mock_exec, mock_logger):
     """If parsing the code fails to generate an AST then the code should not attempt to be executed."""
-    execute_code_chunk('invalid code')
+    execute_code_chunk("invalid code")
     assert mock_logger.info.called
     assert mock_exec.called is False  # make sure nothing is executed
     assert mock_eval.called is False
@@ -46,13 +51,13 @@ def test_execute_code_chunk_without_ast(mock_eval, mock_exec, mock_logger):
 
 def test_output_capture():
     """Output to STDOUT should be captured in the CodeChunk's outputs property."""
-    cc = execute_code_chunk('print(\'Hello world!\')')
-    assert cc.outputs == ['Hello world!\n']
+    cc = execute_code_chunk("print('Hello world!')")
+    assert cc.outputs == ["Hello world!\n"]
 
 
 def test_result_capture():
     """Variable assignment should not be captured as an output, return values from functions should (for example)."""
-    cc = execute_code_chunk('a = 5\ndef add_five(b):\n    return b + 5\nadd_five(a)')
+    cc = execute_code_chunk("a = 5\ndef add_five(b):\n    return b + 5\nadd_five(a)")
     assert cc.outputs == [10]
 
 
@@ -61,7 +66,7 @@ def test_duration():
     CodeChunk execution duration should be captured. We don't want to slow down running tests so just check it's
     greater than 0.
     """
-    cc = execute_code_chunk('for i in range(10):\n b = i + 1')
+    cc = execute_code_chunk("for i in range(10):\n b = i + 1")
     assert cc.duration > 0
 
 
@@ -70,20 +75,22 @@ def test_code_chunk_exception_capture():
     If an Exception occurs it should be recorded and code outputs up to that point added to outputs.  The rest of the
     code should not be run, although subsequent code blocks should.
     """
-    cc1 = CodeChunk('a = 5\na + 2\nprint(\'Goodbye world!\')\nbadref += 1\nprint(\'After exception!\')')
-    cc2 = CodeChunk('2 + 2\nprint(\'CodeChunk2\')')
+    cc1 = CodeChunk(
+        "a = 5\na + 2\nprint('Goodbye world!')\nbadref += 1\nprint('After exception!')"
+    )
+    cc2 = CodeChunk("2 + 2\nprint('CodeChunk2')")
 
     interpreter = Interpreter()
     for cc in [cc1, cc2]:
         interpreter.execute(cc)
 
-    assert cc1.outputs == [7, 'Goodbye world!\n']
-    assert cc1.errors[0].errorType == 'NameError'
+    assert cc1.outputs == [7, "Goodbye world!\n"]
+    assert cc1.errors[0].errorType == "NameError"
 
-    assert cc2.outputs == [4, 'CodeChunk2\n']
+    assert cc2.outputs == [4, "CodeChunk2\n"]
 
 
-@unittest.mock.patch('stencila.pyla.interpreter.DocumentCompiler')
+@unittest.mock.patch("stencila.pyla.interpreter.DocumentCompiler")
 def test_compile_article(mock_dc_class):
     article = unittest.mock.MagicMock(spec=Article)
 
@@ -93,11 +100,11 @@ def test_compile_article(mock_dc_class):
     assert mock_dc_class.return_value.compile.return_value == dcr
 
 
-@unittest.mock.patch('stencila.pyla.interpreter.ParameterParser')
-@unittest.mock.patch('stencila.pyla.interpreter.Interpreter')
+@unittest.mock.patch("stencila.pyla.interpreter.ParameterParser")
+@unittest.mock.patch("stencila.pyla.interpreter.Interpreter")
 def test_execute_compilation(mock_interpreter_class, mock_pp_class):
     compilation_result = unittest.mock.MagicMock(spec=DocumentCompilationResult)
-    parameters = ['--flag', 'value']
+    parameters = ["--flag", "value"]
 
     parameter_parser = mock_pp_class.return_value
     interpreter = mock_interpreter_class.return_value
@@ -114,13 +121,13 @@ def test_sempahore_skipping():
     i = Interpreter()
     outputs = []
 
-    i.add_output(outputs, 'abc123')
+    i.add_output(outputs, "abc123")
 
     decode_original = i.decode_output
     i.decode_output = unittest.mock.MagicMock(return_value=SKIP_OUTPUT_SEMAPHORE)
-    i.add_output(outputs, 'skip')
+    i.add_output(outputs, "skip")
     i.decode_output = decode_original
 
     i.add_output(outputs, [1, 2, 3])
 
-    assert outputs == ['abc123', [1, 2, 3]]
+    assert outputs == ["abc123", [1, 2, 3]]

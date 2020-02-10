@@ -4,6 +4,7 @@
 
 [![Build Status](https://dev.azure.com/stencila/stencila/_apis/build/status/stencila.pyla?branchName=master)](https://dev.azure.com/stencila/stencila/_build/latest?definitionId=3&branchName=master)
 [![Code coverage](https://codecov.io/gh/stencila/pyla/branch/master/graph/badge.svg)](https://codecov.io/gh/stencila/pyla)
+[![Code style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![PyPI](https://img.shields.io/pypi/v/stencila-pyla.svg)](https://pypi.org/project/stencila-pyla)
 [![Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://stencila.github.io/pyla/)
 
@@ -46,15 +47,21 @@ must be named.
 
 ## Develop
 
+### Code formatting
+
+We use [Black](https://github.com/psf/black) to maintain a consistent code formatting style. To run it use `black .` or `make format`.
+
+### Running
+
 There are two options to run the interpreter without installing this package (which can be useful when developing).
 
-### Use `setup.py develop`
+#### Use `setup.py develop`
 
 Run `python3 setup.py develop` which will link this library into your site packages directory. You can then execute
 documents with the above command.
 
 
-### Change into `stencila` folder
+#### Change into `stencila` folder
 
 You can run the interpreter as a module by changing into the `stencila` directory first, and then omitting the
 `stencila` namespace:
