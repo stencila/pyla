@@ -1,9 +1,9 @@
 import typing
 
-from stencila.schema import util
 from stencila.pyla.interpreter import DocumentCompiler
 from stencila.pyla.code_parsing import CodeChunkExecution
 from stencila.schema.types import Article, Parameter, CodeExpression, CodeChunk
+from stencila.schema.json import dict_decode
 
 
 def test_compile_article():
@@ -14,7 +14,7 @@ def test_compile_article():
     expr_1_text = "a * parameter_one"
     expr_2_text = "more invalid python code"
 
-    article = util.from_dict(
+    article = dict_decode(
         {
             "type": "Article",
             "title": "Upcoming Temperatures",

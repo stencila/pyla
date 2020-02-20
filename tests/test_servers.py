@@ -4,7 +4,6 @@ import pytest
 from unittest import mock
 
 from stencila.schema.types import CodeChunk, CodeExpression
-from stencila.schema.util import object_encode
 from stencila.pyla.interpreter import Interpreter
 from stencila.pyla.servers import (
     StreamServer,
@@ -194,26 +193,26 @@ def test_receive_message_with_internal_server_error():
     }
 
 
-@mock.patch("stencila.pyla.servers.from_dict", name="from_dict")
-def test_execute_code_chunk(from_dict):
+@mock.patch("stencila.pyla.servers.dict_decode", name="dict_decode")
+def test_execute_code_chunk(dict_decode):
     """Test execution of a CodeChunk (with some mocks)"""
     interpreter = mock.MagicMock(spec=Interpreter, name="interpreter")
     server = StreamServer(interpreter, BytesIO(), BytesIO())
     cc = CodeChunk("1+1")
-    from_dict.return_value = cc
+    dict_decode.return_value = cc
     server.receive_message(
         json.dumps({"id": 13, "method": "execute", "params": {"node": "cc"}})
     )
     interpreter.execute.assert_called_with(cc)
 
 
-@mock.patch("stencila.pyla.servers.from_dict", name="from_dict")
-def test_execute_code_expr(from_dict):
+@mock.patch("stencila.pyla.servers.dict_decode", name="dict_decode")
+def test_execute_code_expr(dict_decode):
     """Test execution of a CodeExpression (with some mocks)"""
     interpreter = mock.MagicMock(spec=Interpreter, name="interpreter")
     server = StreamServer(interpreter, BytesIO(), BytesIO())
     ce = CodeExpression("1+1")
-    from_dict.return_value = ce
+    dict_decode.return_value = ce
     server.receive_message(
         json.dumps({"id": 13, "method": "execute", "params": {"node": "ce"}})
     )

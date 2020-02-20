@@ -42,7 +42,7 @@ from stencila.schema.types import (
     DatatableColumn,
     Function,
 )
-from stencila.schema.util import from_json, to_json
+from stencila.schema.json import decode, encode
 
 from .errors import CapabilityError
 from .code_parsing import (
@@ -644,7 +644,7 @@ def read_input(input_file: str) -> Article:
     else:
         with open(input_file) as i:
             j = i.read()
-    article = from_json(j)
+    article = decode(j)
     if not isinstance(article, Article):
         raise TypeError("Decoded JSON was not an Article")
     return article
@@ -657,10 +657,10 @@ def write_output(output_file: str, article: Article) -> None:
     If the path is "-" then output to stdout.
     """
     if output_file == "-":
-        sys.stdout.write(to_json(article))
+        sys.stdout.write(encode(article))
     else:
         with open(output_file, "w") as file:
-            file.write(to_json(article))
+            file.write(encode(article))
 
 
 def execute_compilation(
