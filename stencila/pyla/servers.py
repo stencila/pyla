@@ -10,7 +10,7 @@ import logging
 import typing
 from socket import socket
 from stencila.schema.types import Node
-from stencila.schema.util import from_dict, object_encode
+from stencila.schema.json import dict_decode, object_encode
 
 from .errors import CapabilityError
 from .interpreter import Interpreter
@@ -19,7 +19,7 @@ StreamType = typing.Union[typing.BinaryIO, socket]
 
 
 def rpc_json_object_encode(node: Node) -> typing.Union[dict, str]:
-    """Like `stencila.schema.util.object_encode` but with support for JsonRpcError."""
+    """Like `stencila.schema.json.object_encode` but with support for JsonRpcError."""
     if isinstance(node, JsonRpcError):
         return {"code": node.code.value, "message": str(node), "data": node.data}
 
@@ -250,7 +250,7 @@ class StreamServer:
                         JsonRpcErrorCode.InvalidParams,
                         'Invalid params: "node" is missing',
                     )
-                node = from_dict(node)
+                node = dict_decode(node)
                 result = (
                     self.interpreter.compile(node)
                     if method == "compile"
