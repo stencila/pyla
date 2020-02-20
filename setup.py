@@ -25,7 +25,10 @@ setup(
     python_requires=">=3.6.0",
     url="https://github.com/stencila/pyla",
     packages=["stencila.pyla"],
-    install_requires=["astor==0.8.1", "stencila-schema==0.37.2"],
+    install_requires=[
+        "astor==0.8.1",
+        "stencila-schema==0.37.2"
+    ],
     extras_require={},
     include_package_data=True,
     license="Apache-2.0",

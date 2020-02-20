@@ -11,7 +11,7 @@ lint:
 	mypy stencila/pyla --ignore-missing-imports
 
 format:
-	black .
+	black --exclude setup.py .
 
 test:
 	tox
