@@ -27,7 +27,7 @@ setup(
     packages=["stencila.pyla"],
     install_requires=[
         "astor==0.8.1",
-        "stencila-schema==0.37.3"
+        "stencila-schema==0.42.0"
     ],
     extras_require={},
     include_package_data=True,
