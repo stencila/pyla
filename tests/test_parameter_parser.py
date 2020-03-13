@@ -97,7 +97,7 @@ def test_parse_with_empty_parameters():
 def test_exit_on_missing_parameters():
     """ArgumentParser calls sys.exit(2) if required parameters are missing. Mock that call and verify it occurs."""
     pp = ParameterParser(
-        [Parameter("foo", required=True), Parameter("bar", required=True)]
+        [Parameter("foo", isRequired=True), Parameter("bar", isRequired=True)]
     )
 
     old_exit = sys.exit
@@ -113,11 +113,11 @@ def test_exit_on_missing_parameters():
 def test_parameter_cli_parsing():
     pp = ParameterParser(
         [
-            Parameter("foo", required=True),
-            Parameter("bar", required=True),
-            Parameter("baz", required=False),
-            Parameter("rex", required=False, default="rex_default"),
-            Parameter("quz", required=False, validator=IntegerValidator()),
+            Parameter("foo", isRequired=True),
+            Parameter("bar", isRequired=True),
+            Parameter("baz", isRequired=False),
+            Parameter("rex", isRequired=False, default="rex_default"),
+            Parameter("quz", isRequired=False, validator=IntegerValidator()),
         ]
     )
 

@@ -226,12 +226,12 @@ def check_result_fields_empty(
 def check_parameter(
     p: Parameter,
     name: str,
-    required: bool,
+    isRequired: bool,
     default: typing.Any,
     validator: typing.Optional[typing.Type[ValidatorTypes]],
 ) -> None:
     assert p.name == name
-    assert p.required == required
+    assert p.isRequired == isRequired
     assert p.default == default
     if validator is not None:
         assert isinstance(p.validator, validator)
@@ -296,12 +296,12 @@ def test_function_def_parsing():
     check_parameter(variable_args.parameters[1], "e", True, None, None)
 
     check_parameter(variable_args.parameters[2], "args", False, None, None)
-    assert variable_args.parameters[2].repeats is True
-    assert not variable_args.parameters[2].extends
+    assert variable_args.parameters[2].isVariadic is True
+    assert not variable_args.parameters[2].isExtensible
 
     check_parameter(variable_args.parameters[3], "kwargs", False, None, None)
-    assert not variable_args.parameters[3].repeats
-    assert variable_args.parameters[3].extends is True
+    assert not variable_args.parameters[3].isVariadic
+    assert variable_args.parameters[3].isExtensible is True
 
     assert default_args.name == "default_args"
     assert len(default_args.parameters) == 2

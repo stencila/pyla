@@ -663,20 +663,24 @@ class CodeChunkParser:
                     param.default = default.value
                 else:
                     self.parse_statement(default)
-                param.required = False
+                param.isRequired = False
             else:
-                param.required = True
+                param.isRequired = True
 
             func.parameters.append(param)
 
         if statement.args.vararg:
             func.parameters.append(
-                Parameter(name=statement.args.vararg.arg, required=False, repeats=True)
+                Parameter(
+                    name=statement.args.vararg.arg, isRequired=False, isVariadic=True
+                )
             )
 
         if statement.args.kwarg:
             func.parameters.append(
-                Parameter(name=statement.args.kwarg.arg, required=False, extends=True)
+                Parameter(
+                    name=statement.args.kwarg.arg, isRequired=False, isExtensible=True
+                )
             )
 
         self.seen_vars.append(func.name)

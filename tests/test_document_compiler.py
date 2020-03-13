@@ -53,7 +53,7 @@ def test_compile_article():
                                 {
                                     "type": "Parameter",
                                     "name": "bad_param",
-                                    "required": True,
+                                    "isRequired": True,
                                 }
                             ],
                         }

@@ -527,7 +527,9 @@ class Interpreter:
 
             columns.append(
                 DatatableColumn(
-                    column_name, values, validator=ArrayValidator(items=validator)
+                    column_name,
+                    values,
+                    validator=ArrayValidator(itemsValidator=validator),
                 )
             )
 
@@ -589,7 +591,7 @@ class ParameterParser:
         for param in self.parameters.values():
             if not isinstance(param.validator, ConstantValidator):
                 param_parser.add_argument(
-                    "--" + param.name, dest=param.name, required=param.required
+                    "--" + param.name, dest=param.name, required=param.isRequired
                 )
 
         args, _ = param_parser.parse_known_args(cli_args)
