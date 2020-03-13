@@ -47,6 +47,14 @@ must be named.
 
 ## Develop
 
+### setup
+
+To install the packages needed for development, run `make setup` or,
+
+```bash
+pip3 install --user --upgrade -r requirements-dev.txt
+```
+
 ### Code formatting
 
 We use [Black](https://github.com/psf/black) to maintain a consistent code formatting style. To run it use `black .` or `make format`.

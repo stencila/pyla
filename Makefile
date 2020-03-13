@@ -1,4 +1,4 @@
-all: setup clean lint format test build docs
+all: lint format test build docs
 
 setup:
 	pip3 install --user --upgrade -r requirements-dev.txt
