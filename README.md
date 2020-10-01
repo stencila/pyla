@@ -33,18 +33,6 @@ Then, if you have [`executa`](https://github.com/stencila/executa) installed the
 executa repl python
 ```
 
-Alternatively, you can use Pyla directly to execute documents:
-
-```bash
-$ python3 -m stencila.pyla execute <inputfile> <outputfile> [parameters]
-```
-
-- `<inputfile>` and/or `<outputfile>` can be set to `-` to read from stdin and/or write to stdout (respectively).
-
-- `[parameters]` is a list of parameters to pass to the document –- these will differ based on what the document defines.
-They can be passed either by `--parameter_name=parameter_value` or `--parameter_name parameter_value`. Each parameter
-must be named.
-
 ## Develop
 
 ### setup
