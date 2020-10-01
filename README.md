@@ -1,6 +1,6 @@
 # 🐍 Pyla
 
-#### Python interpreter for Stencila
+#### Python interpreter for executable documents
 
 [![Build Status](https://dev.azure.com/stencila/stencila/_apis/build/status/stencila.pyla?branchName=master)](https://dev.azure.com/stencila/stencila/_build/latest?definitionId=3&branchName=master)
 [![Code coverage](https://codecov.io/gh/stencila/pyla/branch/master/graph/badge.svg)](https://codecov.io/gh/stencila/pyla)

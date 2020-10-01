@@ -16,7 +16,7 @@ with io.open(os.path.join(HERE, "README.md"), encoding="utf-8") as f:
 
 setup(
     name="stencila-pyla",
-    description="Python interpreter for Stencila",
+    description="Python interpreter for executable documents",
     version=__version__,
     long_description=long_description,
     long_description_content_type="text/markdown",
