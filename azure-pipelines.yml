@@ -4,25 +4,25 @@ jobs:
   - job: test
     strategy:
       matrix:
+        linux_38:
+          image_name: ubuntu-latest
+          python_version: 3.8
+          tox_env: py38
         linux_37:
           image_name: ubuntu-latest
           python_version: 3.7
           tox_env: py37
-        linux_36:
-          image_name: ubuntu-latest
-          python_version: 3.6
-          tox_env: py36
         mac:
           image_name: macOS-latest
-          python_version: 3.7
-          tox_env: py37
+          python_version: 3.8
+          tox_env: py38
 
         # Tests currently fail on windows
         # See https://github.com/stencila/pyla/issues/2
         # windows:
         #  image_name: windows-latest
-        #  python_version: 3.7
-        #  tox_env: py37
+        #  python_version: 3.8
+        #  tox_env: py38
     pool:
       vmImage: $(image_name)
     steps:
@@ -64,7 +64,7 @@ jobs:
     steps:
       - task: UsePythonVersion@0
         inputs:
-          versionSpec: 3.7
+          versionSpec: 3.8
         displayName: 'Install Python'
 
       - script: |
