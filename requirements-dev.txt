@@ -10,4 +10,4 @@ python-semantic-release==4.3.3
 setuptools==42.0.2
 sphinx==2.2.2
 tox==3.14.2
-wheel==0.33.6
+wheel==0.35.1
