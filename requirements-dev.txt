@@ -2,7 +2,7 @@ black==19.10b0
 coverage==4.5.4
 m2r==0.2.1
 mypy==0.750
-pylint==2.4.4
+pylint==2.6.0
 pytest==5.3.1
 pytest-asyncio==0.10.0
 pytest-cov==2.8.1
