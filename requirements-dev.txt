@@ -9,5 +9,5 @@ pytest-cov==2.8.1
 python-semantic-release==4.3.3
 setuptools==42.0.2
 sphinx==2.2.2
-tox==3.14.2
+tox==3.20.1
 wheel==0.33.6
