@@ -4,8 +4,6 @@ from stencila.schema.types import CodeExpression, CodeChunk, Article
 from stencila.pyla.code_parsing import CodeChunkExecution, CodeChunkParser
 from stencila.pyla.interpreter import (
     Interpreter,
-    execute_compilation,
-    compile_article,
     DocumentCompilationResult,
     SKIP_OUTPUT_SEMAPHORE,
 )
@@ -88,32 +86,6 @@ def test_code_chunk_exception_capture():
     assert cc1.errors[0].errorType == "NameError"
 
     assert cc2.outputs == [4, "CodeChunk2\n"]
-
-
-@unittest.mock.patch("stencila.pyla.interpreter.DocumentCompiler")
-def test_compile_article(mock_dc_class):
-    article = unittest.mock.MagicMock(spec=Article)
-
-    dcr = compile_article(article)
-
-    mock_dc_class.return_value.compile.assert_called_with(article)
-    assert mock_dc_class.return_value.compile.return_value == dcr
-
-
-@unittest.mock.patch("stencila.pyla.interpreter.ParameterParser")
-@unittest.mock.patch("stencila.pyla.interpreter.Interpreter")
-def test_execute_compilation(mock_interpreter_class, mock_pp_class):
-    compilation_result = unittest.mock.MagicMock(spec=DocumentCompilationResult)
-    parameters = ["--flag", "value"]
-
-    parameter_parser = mock_pp_class.return_value
-    interpreter = mock_interpreter_class.return_value
-
-    execute_compilation(compilation_result, parameters)
-
-    mock_pp_class.assert_called_with(compilation_result.parameters)
-    parameter_parser.parse_cli_args.assert_called_with(parameters)
-    interpreter.execute.assert_not_called()  # Because nothing in compilation_result
 
 
 def test_sempahore_skipping():
