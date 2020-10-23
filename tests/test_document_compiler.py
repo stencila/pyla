@@ -1,9 +1,10 @@
 import typing
 
+from stencila.schema.json import dict_decode
+from stencila.schema.types import Article, CodeChunk, CodeExpression, Parameter
+
 from stencila.pyla.interpreter import DocumentCompiler
 from stencila.pyla.parser import CodeChunkExecution
-from stencila.schema.types import Article, Parameter, CodeExpression, CodeChunk
-from stencila.schema.json import dict_decode
 
 
 def test_compile_article():

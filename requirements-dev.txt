@@ -1,5 +1,6 @@
 black==19.10b0
 coverage==4.5.4
+isort==5.6.4
 m2r==0.2.1
 mypy==0.782
 pylint==2.6.0

@@ -1,22 +1,23 @@
 import typing
+
 from stencila.schema.types import (
-    Variable,
-    IntegerValidator,
+    ArrayValidator,
+    BooleanValidator,
     CodeChunk,
     Function,
-    Parameter,
-    ValidatorTypes,
-    StringValidator,
-    BooleanValidator,
+    IntegerValidator,
     NumberValidator,
-    ArrayValidator,
+    Parameter,
+    StringValidator,
     TupleValidator,
+    ValidatorTypes,
+    Variable,
 )
 
 from stencila.pyla.parser import (
+    CodeChunkParser,
     CodeChunkParseResult,
     annotation_name_to_validator,
-    CodeChunkParser,
 )
 
 ASSIGNMENT_CODE = """

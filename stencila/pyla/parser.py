@@ -7,20 +7,20 @@ import traceback
 import typing
 
 from stencila.schema.types import (
-    SoftwareSourceCode,
-    Function,
-    Variable,
-    CodeError,
-    CodeChunk,
-    ValidatorTypes,
+    ArrayValidator,
     BooleanValidator,
-    StringValidator,
+    CodeChunk,
+    CodeError,
+    CodeExpression,
+    Function,
     IntegerValidator,
     NumberValidator,
-    ArrayValidator,
-    TupleValidator,
-    CodeExpression,
     Parameter,
+    SoftwareSourceCode,
+    StringValidator,
+    TupleValidator,
+    ValidatorTypes,
+    Variable,
 )
 
 ImportsType = typing.List[typing.Union[str, SoftwareSourceCode]]

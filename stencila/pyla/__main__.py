@@ -12,9 +12,9 @@ yourself.
 import logging
 from sys import argv, stderr
 
-from .system import register, deregister
 from .interpreter import Interpreter
 from .servers import StdioServer
+from .system import deregister, register
 
 # Send logs to stderr so that there it does not interfere with
 # JSON-RPC comms using length-prefixed streams over stdio.

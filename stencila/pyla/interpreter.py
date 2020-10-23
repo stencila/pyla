@@ -9,47 +9,46 @@ Warning: `eval` and `exec` are used to run code in the document. Don't execute d
 yourself.
 """
 
-import sys
-
+import ast
 import base64
 import datetime
 import logging
+import sys
 import typing
 from contextlib import redirect_stdout
-from io import TextIOWrapper, BytesIO
+from io import BytesIO, TextIOWrapper
 
-import ast
 import astor
 from stencila.schema.types import (
-    Node,
-    Parameter,
-    CodeChunk,
-    Article,
-    Entity,
-    CodeExpression,
-    BooleanValidator,
-    NumberValidator,
-    IntegerValidator,
-    StringValidator,
     ArrayValidator,
-    ImageObject,
+    Article,
+    BooleanValidator,
+    CodeChunk,
+    CodeExpression,
     Datatable,
     DatatableColumn,
+    Entity,
     Function,
+    ImageObject,
+    IntegerValidator,
+    Node,
+    NumberValidator,
+    Parameter,
+    StringValidator,
 )
 
 from .errors import CapabilityError
 from .parser import (
     CodeChunkExecution,
-    set_code_error,
     CodeChunkParser,
-    simple_code_chunk_parse,
     CodeChunkParseResult,
+    set_code_error,
+    simple_code_chunk_parse,
 )
 
 try:
-    import matplotlib.figure
     import matplotlib.artist
+    import matplotlib.figure
     from matplotlib.cbook import silent_list
 
     # pylint: disable=C0103
@@ -73,8 +72,8 @@ except ImportError:
     MPL_AVAILABLE = False
 
 try:
-    from pandas import DataFrame
     import numpy
+    from pandas import DataFrame
 
     PANDAS_AVAILABLE = True
 except ImportError:

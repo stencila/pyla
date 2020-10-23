@@ -2,15 +2,15 @@
 Module for server classes.
 """
 
-import sys
-
 import enum
 import json
 import logging
+import sys
 import typing
 from socket import socket
-from stencila.schema.types import Node
+
 from stencila.schema.json import dict_decode, object_encode
+from stencila.schema.types import Node
 
 from .errors import CapabilityError
 from .interpreter import Interpreter

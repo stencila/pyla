@@ -1,17 +1,18 @@
-from io import BytesIO
 import json
-import pytest
+from io import BytesIO
 from unittest import mock
 
+import pytest
 from stencila.schema.types import CodeChunk, CodeExpression
+
 from stencila.pyla.interpreter import Interpreter
 from stencila.pyla.servers import (
+    JsonRpcErrorCode,
     StreamServer,
+    encode_int,
     message_read,
     message_write,
     read_one,
-    encode_int,
-    JsonRpcErrorCode,
 )
 
 

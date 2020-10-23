@@ -12,6 +12,7 @@ lint:
 
 format:
 	black --exclude setup.py .
+	isort isort .
 
 test:
 	tox

@@ -1,12 +1,13 @@
 import unittest.mock
-from stencila.schema.types import CodeExpression, CodeChunk, Article
 
-from stencila.pyla.parser import CodeChunkExecution, CodeChunkParser
+from stencila.schema.types import Article, CodeChunk, CodeExpression
+
 from stencila.pyla.interpreter import (
-    Interpreter,
-    DocumentCompilationResult,
     SKIP_OUTPUT_SEMAPHORE,
+    DocumentCompilationResult,
+    Interpreter,
 )
+from stencila.pyla.parser import CodeChunkExecution, CodeChunkParser
 
 
 def execute_code_chunk(text: str) -> CodeChunk:
