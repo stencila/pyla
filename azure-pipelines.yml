@@ -18,7 +18,6 @@ jobs:
           image_name: macOS-latest
           python_version: 3.7
           tox_env: py37
-
         # Tests currently fail on windows
         # See https://github.com/stencila/pyla/issues/2
         # windows:
@@ -42,7 +41,7 @@ jobs:
       - script: make build
         displayName: 'Build package'
 
-      # Only do, these platform independent tasks on Linux and only
+      # Only do these platform independent tasks on Linux and only
       # if succeeded so far
 
       - script: make lint
