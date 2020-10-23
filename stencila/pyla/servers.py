@@ -235,7 +235,7 @@ class StreamServer:
             except Exception as exc:
                 raise JsonRpcError(
                     JsonRpcErrorCode.ParseError, "Parse error: {}".format(exc)
-                )
+                ) from exc
 
             request_id = request.get("id")
             method = request.get("method")

@@ -130,8 +130,8 @@ class StdoutBuffer(TextIOWrapper):
 
     def write(self, string: typing.Union[bytes, str]) -> int:
         if isinstance(string, str):
-            return super(StdoutBuffer, self).write(string)
-        return super(StdoutBuffer, self).buffer.write(string)
+            return super().write(string)
+        return super().buffer.write(string)
 
 
 class DocumentCompilationResult(typing.NamedTuple):
