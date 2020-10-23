@@ -1,7 +1,7 @@
 import typing
 
 from stencila.pyla.interpreter import DocumentCompiler
-from stencila.pyla.code_parsing import CodeChunkExecution
+from stencila.pyla.parser import CodeChunkExecution
 from stencila.schema.types import Article, Parameter, CodeExpression, CodeChunk
 from stencila.schema.json import dict_decode
 

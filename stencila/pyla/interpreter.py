@@ -11,10 +11,8 @@ yourself.
 
 import sys
 
-import argparse
 import base64
 import datetime
-import json
 import logging
 import typing
 from contextlib import redirect_stdout
@@ -29,23 +27,19 @@ from stencila.schema.types import (
     Article,
     Entity,
     CodeExpression,
-    ConstantValidator,
-    EnumValidator,
     BooleanValidator,
     NumberValidator,
     IntegerValidator,
     StringValidator,
     ArrayValidator,
-    TupleValidator,
     ImageObject,
     Datatable,
     DatatableColumn,
     Function,
 )
-from stencila.schema.json import decode, encode
 
 from .errors import CapabilityError
-from .code_parsing import (
+from .parser import (
     CodeChunkExecution,
     set_code_error,
     CodeChunkParser,

@@ -13,7 +13,7 @@ from stencila.schema.types import (
     TupleValidator,
 )
 
-from stencila.pyla.code_parsing import (
+from stencila.pyla.parser import (
     CodeChunkParseResult,
     annotation_name_to_validator,
     CodeChunkParser,

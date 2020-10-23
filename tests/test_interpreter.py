@@ -1,7 +1,7 @@
 import unittest.mock
 from stencila.schema.types import CodeExpression, CodeChunk, Article
 
-from stencila.pyla.code_parsing import CodeChunkExecution, CodeChunkParser
+from stencila.pyla.parser import CodeChunkExecution, CodeChunkParser
 from stencila.pyla.interpreter import (
     Interpreter,
     DocumentCompilationResult,
