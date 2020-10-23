@@ -7,5 +7,24 @@
       "requirements.txt",
       "requirements-dev.txt"
     ]
-  }
+  },
+  "packageRules": [
+    {
+      "paths": [
+        "setup.py"
+      ],
+      "rangeStrategy": "pin",
+      "semanticCommitType": "fix",
+      "semanticCommitScope": "Deps"
+    },
+    {
+      "groupName": "Dev dependencies",
+      "paths": [
+        "requirements-dev.txt"
+      ],
+      "rangeStrategy": "pin",
+      "semanticCommitType": "chore",
+      "semanticCommitScope": "Dev deps"
+    }
+  ]
 }
