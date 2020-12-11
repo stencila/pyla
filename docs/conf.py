@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath(os.path.join("..", "stencila")))
 # -- Project information -----------------------------------------------------
 
 project = "pyla"
-copyright = "2019, Stencila and contributors"
+copyright = "2020, Stencila and contributors"
 author = "Stencila and contributors"
 
 # The short X.Y version
@@ -48,7 +48,7 @@ extensions = [
     "sphinx.ext.ifconfig",
     "sphinx.ext.viewcode",
     "sphinx.ext.githubpages",
-    "m2r",
+    "m2r2",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -87,7 +87,7 @@ html_theme = "alabaster"
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
-    "description": "Python interpreter for Stencila",
+    "description": "Python interpreter for executable documents",
     "github_user": "stencila",
     "github_repo": "pyla",
     "github_banner": False,
@@ -183,15 +183,15 @@ texinfo_documents = [
 
 autodoc_member_order = "bysource"
 
-# Used m2r to convert Markdown to rst
+# Used m2r2 to convert Markdown to rst
 # Thanks to https://stackoverflow.com/a/56428123/4625911
 
-import m2r
+import m2r2
 
 
 def docstring(app, what, name, obj, options, lines):
     md = "\n".join(lines)
-    rst = m2r.convert(md)
+    rst = m2r2.convert(md)
     lines.clear()
     for line in rst.splitlines():
         lines.append(line)
