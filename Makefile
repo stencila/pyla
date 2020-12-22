@@ -1,7 +1,7 @@
 all: format lint test build docs
 
 setup:
-	pip3 install --user --upgrade -r requirements-dev.txt
+	python3 -m pip install --user --upgrade -r requirements-dev.txt
 
 install:
 	python3 setup.py install
