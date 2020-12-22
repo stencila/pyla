@@ -57,7 +57,7 @@ jobs:
         displayName: 'Upload coverage'
 
 
-  - job: deploy
+  - job: release
     dependsOn: test
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
     pool:
@@ -71,11 +71,11 @@ jobs:
       - script: |
           # Install dev dependencies
           pip3 install -r requirements-dev.txt
-          # Deploy package (if necessary)
+          # Publish package (if necessary)
           git config user.name "Stencila CI Bot"
           git config user.email "ci@stenci.la"
           semantic-release publish
-          # Deploy docs
+          # Publish docs
           # Sphinx autodoc needs to have prod deps
           # (e.g. stencila.schema) also installed
           python3 setup.py develop
@@ -92,4 +92,4 @@ jobs:
           GH_TOKEN: $(GH_TOKEN)
           PYPI_USERNAME: stencila
           PYPI_PASSWORD: $(PYPI_PASSWORD)
-        displayName: 'Deploy package'
+        displayName: 'Release package'
