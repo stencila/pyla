@@ -6,19 +6,19 @@ jobs:
       matrix:
         linux_39:
           image_name: ubuntu-latest
-          python_version: 3.9
+          python_version: '3.9'
           tox_env: py39
         linux_38:
           image_name: ubuntu-latest
-          python_version: 3.8
+          python_version: '3.8'
           tox_env: py38
         linux_37:
           image_name: ubuntu-latest
-          python_version: 3.7
+          python_version: '3.7'
           tox_env: py37
         mac:
           image_name: macOS-latest
-          python_version: 3.8
+          python_version: '3.8'
           tox_env: py38
         # Tests currently fail on windows
         # See https://github.com/stencila/pyla/issues/2
@@ -47,7 +47,8 @@ jobs:
       # if succeeded so far
 
       - script: make lint
-        condition: and(succeeded(), eq(variables['agent.os'], 'Linux'))
+        # pylint currently fails under Python 3.9. See https://github.com/PyCQA/pylint/issues/3882
+        condition: and(succeeded(), eq(variables['agent.os'], 'Linux'), not(eq(variables['python_version'], '3.9')))
         displayName: 'Linting'
       
       - script: make docs
