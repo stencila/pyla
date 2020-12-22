@@ -46,6 +46,11 @@ from .parser import (
     simple_code_chunk_parse,
 )
 
+if sys.version_info > (3, 8):
+    AstModule = ast.Module
+else:
+    AstModule = lambda nodelist, type_ignores: ast.Module(nodelist)
+
 try:
     import matplotlib.artist
     import matplotlib.figure
@@ -491,8 +496,7 @@ class Interpreter:
             # definition) so it can be executed with `exec`.
             capture_result = False
             run_function = exec
-            mod = ast.Module()
-            mod.body = [statement]
+            mod = AstModule([statement], [])
             code_to_run = compile(mod, "<ast>", "exec")
         return capture_result, code_to_run, run_function
 
