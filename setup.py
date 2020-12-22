@@ -23,7 +23,7 @@ setup(
     long_description_content_type="text/markdown",
     author="Stencila and contributors",
     author_email="hello@stenci.la",
-    python_requires=">=3.6.0",
+    python_requires=">=3.7.0",
     url="https://github.com/stencila/pyla",
     packages=["stencila.pyla"],
     install_requires=[
@@ -37,7 +37,7 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: PyPy",
     ],
