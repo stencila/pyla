@@ -96,7 +96,9 @@ SKIP_OUTPUT_SEMAPHORE = object()
 
 
 class CodeTimer:
-    """Context handler for timing code, use inside a `with` statement."""
+    """
+    Context handler for timing code, use inside a `with` statement.
+    """
 
     _start_time: datetime.datetime
     duration: typing.Optional[datetime.timedelta] = None
@@ -119,7 +121,9 @@ class CodeTimer:
 
 
 class StdoutBuffer(TextIOWrapper):
-    """Used for capturing output to stdout."""
+    """
+    Used for capturing output to stdout.
+    """
 
     def write(self, string: typing.Union[bytes, str]) -> int:
         if isinstance(string, str):
@@ -128,14 +132,18 @@ class StdoutBuffer(TextIOWrapper):
 
 
 class DocumentCompilationResult(typing.NamedTuple):
-    """Stores references to Parameters and Code that is parsed from a Document."""
+    """
+    Stores references to Parameters and Code that is parsed from a Document.
+    """
 
     parameters: typing.List[Parameter] = []
     code: typing.List[ExecutableCode] = []
 
 
 class DocumentCompiler:
-    """Parse an executable document (`Article`) and cache references to its parameters and code nodes."""
+    """
+    Parse an executable document (`Article`) and cache references to its parameters and code nodes.
+    """
 
     TARGET_LANGUAGE = "python"
 
@@ -190,7 +198,9 @@ class DocumentCompiler:
         item: typing.Union[CodeChunk, CodeExpression],
         compilation_result: DocumentCompilationResult,
     ) -> None:
-        """Parse a CodeChunk or CodeExpression and add it to `compilation_result.code` list."""
+        """
+        Parse a CodeChunk or CodeExpression and add it to `compilation_result.code` list.
+        """
         if isinstance(item, CodeChunk):
             cc_result, item = Interpreter.compile_code_chunk(item)
 
@@ -207,14 +217,18 @@ class DocumentCompiler:
     def traverse_dict(
         self, _dict: dict, compilation_result: DocumentCompilationResult
     ) -> None:
-        """Traverse into each item of a dict."""
+        """
+        Traverse into each item of a dict.
+        """
         for child in _dict.values():
             self.handle_item(child, compilation_result)
 
     def traverse_list(
         self, _list: typing.List, compilation_result: DocumentCompilationResult
     ) -> None:
-        """Traverse into each element in a list."""
+        """
+        Traverse into each element in a list.
+        """
         for child in _list:
             self.handle_item(child, compilation_result)
 
@@ -298,7 +312,9 @@ class Interpreter:
 
     @staticmethod
     def compile(node: Node) -> Node:
-        """Compile a `CodeChunk`"""
+        """
+        Compile a `CodeChunk`.
+        """
         if isinstance(node, CodeChunk) and Interpreter.is_python_code(node):
             return Interpreter.compile_code_chunk(node)[1]
         raise CapabilityError("compile", node=node)
@@ -306,7 +322,9 @@ class Interpreter:
     def execute(
         self, node: Node, parameter_values: typing.Dict[str, typing.Any] = None
     ) -> Node:
-        """Execute a `CodeChunk` or `CodeExpression`"""
+        """
+        Execute a `CodeChunk` or `CodeExpression`.
+        """
         _locals = self.locals
         if parameter_values is not None:
             _locals.update(parameter_values)
@@ -322,13 +340,17 @@ class Interpreter:
 
     @staticmethod
     def is_python_code(code: typing.Union[CodeChunk, CodeExpression]) -> bool:
-        """Is a `CodeChunk` or `CodeExpression` Python code?"""
+        """
+        Is a `CodeChunk` or `CodeExpression` Python code?
+        """
         return code.programmingLanguage.lower() in Interpreter.PROGRAMMING_LANGUAGES
 
     def execute_code_expression(
         self, expression: CodeExpression, _locals: typing.Dict[str, typing.Any]
     ) -> CodeExpression:
-        """Evaluate `CodeExpression.text`, and get the result. Catch any exception the occurs."""
+        """
+        Evaluate `CodeExpression.text`, and get the result. Catch any exception the occurs.
+        """
         try:
             # pylint: disable=W0123  # Disable warning that eval is being used.
             expression.output = self.decode_output(
@@ -343,7 +365,9 @@ class Interpreter:
     def execute_code_chunk(
         self, chunk_execution: CodeChunkExecution, _locals: typing.Dict[str, typing.Any]
     ) -> CodeChunk:
-        """Execute a `CodeChunk` that has been parsed and stored in a `CodeChunkExecution`."""
+        """
+        Execute a `CodeChunk` that has been parsed and stored in a `CodeChunkExecution`.
+        """
         chunk, parse_result = chunk_execution
 
         if parse_result.chunk_ast is None:
@@ -474,7 +498,9 @@ class Interpreter:
 
     @staticmethod
     def value_is_mpl(value: typing.Any) -> bool:
-        """Basic type checking to determine if a variable is a MatPlotLib figure."""
+        """
+        Basic type checking to determine if a variable is a matplotlib figure.
+        """
         if not MPL_AVAILABLE:
             return False
 
@@ -498,7 +524,9 @@ class Interpreter:
 
     @staticmethod
     def decode_dataframe(data_frame: DataFrame) -> Datatable:
-        """Decode a pandas `DataFrame` into a `Datatable`"""
+        """
+        Decode a pandas `DataFrame` into a `Datatable`.
+        """
         columns = []
 
         for column_name in data_frame.columns:

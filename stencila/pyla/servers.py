@@ -19,7 +19,9 @@ StreamType = typing.Union[typing.BinaryIO, socket]
 
 
 def rpc_json_object_encode(node: Node) -> typing.Union[dict, str]:
-    """Like `stencila.schema.json.object_encode` but with support for JsonRpcError."""
+    """
+    Like `stencila.schema.json.object_encode` but with support for `JsonRpcError`.
+    """
     if isinstance(node, JsonRpcError):
         return {"code": node.code.value, "message": str(node), "data": node.data}
 
@@ -27,17 +29,23 @@ def rpc_json_object_encode(node: Node) -> typing.Union[dict, str]:
 
 
 def to_json(node: Node) -> str:
-    """Convert a node including JsonRrpcErrors, to JSON"""
+    """
+    Convert a node including `JsonRrpcError`s, to JSON.
+    """
     return json.dumps(node, default=rpc_json_object_encode, indent=2)
 
 
 def data_to_bytes(data: typing.Any) -> bytes:
-    """Convert `data` to `bytes`."""
+    """
+    Convert `data` to `bytes`.
+    """
     return bytes((data,))
 
 
 def encode_int(number: int) -> bytes:
-    """Pack `number` into varint bytes"""
+    """
+    Pack `number` into varint bytes.
+    """
     buf = b""
     while True:
         to_write = number & 0x7F
@@ -51,7 +59,8 @@ def encode_int(number: int) -> bytes:
 
 
 def read_one(stream: StreamType) -> int:
-    """Read a byte from the file (as an integer).
+    """
+    Read a byte from a stream.
 
     Raises EOFError if the stream ends while reading bytes.
     """
@@ -62,7 +71,9 @@ def read_one(stream: StreamType) -> int:
 
 
 def read_length_prefix(stream: StreamType) -> int:
-    """Read a varint from `stream`"""
+    """
+    Read a varint from stream.
+    """
     shift = 0
     result = 0
     while True:
@@ -76,25 +87,33 @@ def read_length_prefix(stream: StreamType) -> int:
 
 
 def get_stream_buffer(stream: typing.BinaryIO) -> typing.BinaryIO:
-    """Get the buffer from a stream, if it exists."""
+    """
+    Get the buffer from a stream, if it exists.
+    """
     buffer = getattr(stream, "buffer", None)
     return buffer if buffer else stream
 
 
 def io_read(stream: typing.BinaryIO, count: int) -> bytes:
-    """Read `count` bytes from `stream` or its underlying buffer if it exists."""
+    """
+    Read `count` bytes from stream or its underlying buffer (if it exists).
+    """
     return get_stream_buffer(stream).read(count)
 
 
 def io_write(stream: typing.BinaryIO, message: bytes) -> None:
-    """Write to `stream` or its underlying buffer if it exists."""
+    """
+    Write to a stream or its underlying buffer (if it exists).
+    """
     stream = get_stream_buffer(stream)
     stream.write(message)
     stream.flush()
 
 
 def stream_read(stream: StreamType, count: int) -> bytes:
-    """Abstract reading from stream to work with IO (buffered/unbuffered) and sockets."""
+    """
+    Abstract reading from stream to work with IO (buffered/unbuffered) and sockets.
+    """
     if isinstance(stream, socket):
         return stream.recv(count)
 
@@ -102,7 +121,9 @@ def stream_read(stream: StreamType, count: int) -> bytes:
 
 
 def stream_write(stream: StreamType, message: bytes) -> None:
-    """Abstract writing to stream to work with IO (buffered/unbuffered) and sockets."""
+    """
+    Abstract writing to stream to work with IO (buffered/unbuffered) and sockets.
+    """
     if isinstance(stream, socket):
         stream.send(message)
     else:
@@ -110,13 +131,17 @@ def stream_write(stream: StreamType, message: bytes) -> None:
 
 
 def message_read(stream: StreamType) -> str:
-    """Read a length-prefixed message from the stream"""
+    """
+    Read a length-prefixed message from the stream.
+    """
     message_len = read_length_prefix(stream)
     return stream_read(stream, message_len).decode("utf8")
 
 
 def message_write(stream: StreamType, message: str) -> None:
-    """Write a length-prefixed message to the stream."""
+    """
+    Write a length-prefixed message to the stream.
+    """
     bites = message.encode("utf8")
     stream_write(stream, encode_int(len(bites)))
     stream_write(stream, bites)
@@ -208,12 +233,16 @@ class StreamServer:
         self.output_stream = output_stream
 
     def read_message(self) -> typing.Iterable[str]:
-        """Read a length-prefixed message from the input stream then repeat."""
+        """
+        Read a length-prefixed message from the input stream then repeat.
+        """
         while True:
             yield message_read(self.input_stream)
 
     def write_message(self, message: str) -> None:
-        """Write a length-prefixed message to the output stream."""
+        """
+        Write a length-prefixed message to the output stream.
+        """
         message_write(self.output_stream, message)
 
     def receive_message(self, message: str) -> str:
@@ -284,7 +313,9 @@ class StreamServer:
 
     def start(self) -> None:
         """
-        Run the server in a loop forever (since the `read_message` generator never finishes).
+        Run the server in a loop forever.
+
+        This will run forever because the `read_message` generator never finishes.
         """
         for message in self.read_message():
             response = self.receive_message(message)

@@ -17,7 +17,9 @@ from stencila.pyla.servers import (
 
 
 def test_read_message():
-    """Test that a message written to a stream is read correctly by the server."""
+    """
+    Test that a message written to a stream is read correctly by the server.
+    """
     input_str = BytesIO()
     output_str = BytesIO()
     server = StreamServer(Interpreter(), input_str, output_str)
@@ -29,7 +31,9 @@ def test_read_message():
 
 
 def test_write_message():
-    """Test that a message that the server writes to a stream can be read back out."""
+    """
+    Test that a message that the server writes to a stream can be read back out.
+    """
     input_str = BytesIO()
     output_str = BytesIO()
     server = StreamServer(Interpreter(), input_str, output_str)
@@ -42,7 +46,9 @@ def test_write_message():
 
 
 def test_lps_encoding():
-    """Test various numbers are encoding by the `encode_int` function correctly."""
+    """
+    Test various numbers are encoding by the `encode_int` function correctly.
+    """
     for encoded, raw in (
         (b"\x01", 1),
         (b"\x80\x02", 256),
@@ -53,14 +59,18 @@ def test_lps_encoding():
 
 
 def test_eof_read():
-    """Test that EOFError is raised at the end of the stream read."""
+    """
+    Test that EOFError is raised at the end of the stream read.
+    """
     stream = BytesIO()
     with pytest.raises(EOFError):
         read_one(stream)
 
 
 def test_receive_message_manifest():
-    """Test receiving a manifest message."""
+    """
+    Test receiving a manifest message.
+    """
     server = StreamServer(Interpreter(), BytesIO(), BytesIO())
     response = server.receive_message(json.dumps({"id": 10, "method": "manifest",}))
     decoded = json.loads(response)
@@ -73,7 +83,9 @@ def test_receive_message_manifest():
 
 
 def test_receive_message_execute():
-    """Test receiving an execute method, the execute method of the interpreter should be called with the node."""
+    """
+    Test receiving an execute method, the execute method of the interpreter should be called with the node.
+    """
     interpreter = Interpreter()
     interpreter.execute = mock.MagicMock(name="execute", return_value="executed-code")
 
@@ -92,7 +104,9 @@ def test_receive_message_execute():
 
 
 def test_receive_message_execute_without_node():
-    """Test that JsonRpcError with code JsonRpcErrorCode.InvalidParams is returned if node is missing/None"""
+    """
+    Test that JsonRpcError with code JsonRpcErrorCode.InvalidParams is returned if node is missing/None.
+    """
     server = StreamServer(Interpreter(), BytesIO(), BytesIO())
     response = server.receive_message(
         json.dumps({"id": 12, "method": "execute", "params": {}})
@@ -111,7 +125,9 @@ def test_receive_message_execute_without_node():
 
 
 def test_receive_message_with_invalid_json():
-    """Test that a JsonRpcError with code JsonRpcErrorCode.ParseError is returned if JSON is not valid."""
+    """
+    Test that a JsonRpcError with code JsonRpcErrorCode.ParseError is returned if JSON is not valid.
+    """
     server = StreamServer(Interpreter(), BytesIO(), BytesIO())
     response = server.receive_message("not a valid json")
     decoded = json.loads(response)
@@ -128,7 +144,9 @@ def test_receive_message_with_invalid_json():
 
 
 def test_receive_message_with_unknown_method():
-    """Test that a JsonRpcError with code JsonRpcErrorCode.MethodNotFound is returned if method is not valid."""
+    """
+    Test that a JsonRpcError with code JsonRpcErrorCode.MethodNotFound is returned if method is not valid.
+    """
     server = StreamServer(Interpreter(), BytesIO(), BytesIO())
     response = server.receive_message(
         json.dumps({"id": 13, "method": "not-real", "params": {}})
@@ -147,7 +165,9 @@ def test_receive_message_with_unknown_method():
 
 
 def test_receive_message_with_capability_error():
-    """Test that a JsonRpcError with code JsonRpcErrorCode.CapabilityError is returned when not capable."""
+    """
+    Test that a JsonRpcError with code JsonRpcErrorCode.CapabilityError is returned when not capable.
+    """
     server = StreamServer(Interpreter(), BytesIO(), BytesIO())
     response = server.receive_message(
         json.dumps(
@@ -172,7 +192,9 @@ def test_receive_message_with_capability_error():
 
 
 def test_receive_message_with_internal_server_error():
-    """Test that a JsonRpcError with code JsonRpcErrorCode.ServerError if some other exception occurs"""
+    """
+    Test that a JsonRpcError with code JsonRpcErrorCode.ServerError if some other exception occurs.
+    """
     interpreter = Interpreter()
     interpreter.execute = mock.MagicMock(
         name="execute", side_effect=ValueError("test exception")
@@ -196,7 +218,9 @@ def test_receive_message_with_internal_server_error():
 
 @mock.patch("stencila.pyla.servers.dict_decode", name="dict_decode")
 def test_execute_code_chunk(dict_decode):
-    """Test execution of a CodeChunk (with some mocks)"""
+    """
+    Test execution of a CodeChunk (with some mocks).
+    """
     interpreter = mock.MagicMock(spec=Interpreter, name="interpreter")
     server = StreamServer(interpreter, BytesIO(), BytesIO())
     cc = CodeChunk("1+1")
@@ -209,7 +233,9 @@ def test_execute_code_chunk(dict_decode):
 
 @mock.patch("stencila.pyla.servers.dict_decode", name="dict_decode")
 def test_execute_code_expr(dict_decode):
-    """Test execution of a CodeExpression (with some mocks)"""
+    """
+    Test execution of a CodeExpression (with some mocks).
+    """
     interpreter = mock.MagicMock(spec=Interpreter, name="interpreter")
     server = StreamServer(interpreter, BytesIO(), BytesIO())
     ce = CodeExpression("1+1")

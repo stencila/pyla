@@ -1,4 +1,4 @@
-all: lint format test build docs
+all: format lint test build docs
 
 setup:
 	pip3 install --user --upgrade -r requirements-dev.txt
@@ -6,13 +6,16 @@ setup:
 install:
 	python3 setup.py install
 
-lint:
-	pylint stencila/pyla
-	mypy stencila/pyla --ignore-missing-imports
-
 format:
 	black --exclude setup.py .
-	isort isort .
+	isort .
+
+lint:
+	black --exclude setup.py --check .
+	isort . --check
+	pylint stencila/pyla
+	mypy stencila/pyla --ignore-missing-imports
+	pydocstyle
 
 test:
 	tox

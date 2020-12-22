@@ -1,4 +1,6 @@
-"""Functions for system-related tasks (currently just registering/deregistering the executor manifest)."""
+"""
+Functions for system-related tasks (currently just registering/deregistering the executor manifest).
+"""
 
 import json
 import logging
@@ -16,11 +18,15 @@ EXECUTORS_DIR_NAME = "executors"
 
 
 class ManifestManager:
-    """Register or deregister a manifest file."""
+    """
+    Register or deregister a manifest file.
+    """
 
     @staticmethod
     def get_home_dir() -> typing.Optional[str]:
-        """Get the "home" directory of the current user, (or `APPDATA` dir on windows)."""
+        """
+        Get the "home" directory of the current user, (or `APPDATA` dir on windows).
+        """
         os_name = sys.platform.lower()
 
         if os_name == "windows":
@@ -54,11 +60,15 @@ class ManifestManager:
         return os.path.join(home_dir, "stencila")
 
     def manifest_dir(self) -> str:
-        """Get the directory in which execution registration manifests are stored."""
+        """
+        Get the directory in which execution registration manifests are stored.
+        """
         return os.path.join(self.user_dir(), EXECUTORS_DIR_NAME)
 
     def manifest_path(self) -> str:
-        """Get the path the the execution registration manifest for this type of executor (Python)."""
+        """
+        Get the path the the execution registration manifest for this type of executor (Python).
+        """
         return os.path.join(self.manifest_dir(), MANIFEST_FILE_NAME)
 
     def register(self) -> None:
@@ -90,10 +100,14 @@ class ManifestManager:
 
 
 def register() -> None:
-    """Register the `MANIFEST` as defined by `EXECUTORS_DIR_NAME` and `MANIFEST_FILE_NAME`."""
+    """
+    Register the `MANIFEST` as defined by `EXECUTORS_DIR_NAME` and `MANIFEST_FILE_NAME`.
+    """
     ManifestManager().register()
 
 
 def deregister() -> None:
-    """Deregister the `MANIFEST` as defined by `EXECUTORS_DIR_NAME` and `MANIFEST_FILE_NAME`."""
+    """
+    Deregister the `MANIFEST` as defined by `EXECUTORS_DIR_NAME` and `MANIFEST_FILE_NAME`.
+    """
     ManifestManager().deregister()

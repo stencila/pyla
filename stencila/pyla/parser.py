@@ -31,7 +31,9 @@ LOGGER.addHandler(logging.NullHandler())
 
 # pylint: disable=R0902
 class CodeChunkParseResult:
-    """The result of parsing a `CodeChunk`."""
+    """
+    The result of parsing a `CodeChunk`.
+    """
 
     chunk_ast: typing.Optional[ast.Module]
     _imports: ImportsType
@@ -88,7 +90,9 @@ class CodeChunkParseResult:
 
     @property
     def imports(self) -> typing.Optional[ImportsType]:
-        """Get the `imports` list or `None` if the list is empty."""
+        """
+        Get the `imports` list or `None` if the list is empty.
+        """
         if not self._imports:
             return None
 
@@ -100,7 +104,9 @@ class CodeChunkParseResult:
 
     @property
     def assigns(self) -> OptionalStringList:
-        """Get the `assigns` list or `None` if the list is empty."""
+        """
+        Get the `assigns` list or `None` if the list is empty.
+        """
         if not self._assigns:
             return None
         return self._assigns
@@ -113,7 +119,9 @@ class CodeChunkParseResult:
     def declares(
         self,
     ) -> typing.Optional[typing.List[typing.Union[Function, Variable]]]:
-        """Get the `declares` list or `None` if the list is empty."""
+        """
+        Get the `declares` list or `None` if the list is empty.
+        """
         if not self._declares:
             return None
         return self._declares
@@ -124,7 +132,9 @@ class CodeChunkParseResult:
 
     @property
     def alters(self) -> OptionalStringList:
-        """Get the `alters` list or `None` if the list is empty."""
+        """
+        Get the `alters` list or `None` if the list is empty.
+        """
         if not self._alters:
             return None
         return self._alters
@@ -135,7 +145,9 @@ class CodeChunkParseResult:
 
     @property
     def uses(self) -> OptionalStringList:
-        """Get the `uses` list or `None` if the list is empty."""
+        """
+        Get the `uses` list or `None` if the list is empty.
+        """
         if not self._uses:
             return None
         return self._uses
@@ -146,7 +158,9 @@ class CodeChunkParseResult:
 
     @property
     def reads(self) -> OptionalStringList:
-        """Get the `reads` list or `None` if the list is empty."""
+        """
+        Get the `reads` list or `None` if the list is empty.
+        """
         if not self._reads:
             return None
         return self._reads
@@ -156,7 +170,9 @@ class CodeChunkParseResult:
         self._reads = reads
 
     def to_dict(self):
-        """Return all attributes as a dictionary.."""
+        """
+        Return all attributes as a dictionary.
+        """
         return {
             "chunk_ast": self.chunk_ast,
             "imports": self.imports,
@@ -183,7 +199,9 @@ class CodeChunkExecution(typing.NamedTuple):
 def annotation_name_to_validator(
     name: typing.Optional[str],
 ) -> typing.Optional[ValidatorTypes]:
-    """Parse a Python annotation string (basically a type name) and convert to a `Validator` type."""
+    """
+    Parse a Python annotation string (basically a type name) and convert to a `Validator` type.
+    """
     if name is None:
         return None
 
@@ -242,7 +260,9 @@ def parse_open_filename(open_call: ast.Call) -> typing.Optional[str]:
 
 
 def exception_to_code_error(exception: Exception) -> CodeError:
-    """Convert an `Exception` to a `CodeError` entity."""
+    """
+    Convert an `Exception` to a `CodeError` entity.
+    """
     return CodeError(
         errorType=type(exception).__name__,
         errorMessage=str(exception),
@@ -270,7 +290,7 @@ def set_code_error(
 
 def simple_code_chunk_parse(code: CodeChunk) -> CodeChunkExecution:
     """
-    "Build a CodeChunkExecution from CodeChunk.
+    Build a CodeChunkExecution from CodeChunk.
 
     This is the most basic information that is needed to execute a CodeChunk in the interpreter.
     """
@@ -284,7 +304,9 @@ def simple_code_chunk_parse(code: CodeChunk) -> CodeChunkExecution:
 
 
 class CodeChunkParser:
-    """Parse a `CodeChunk` by parsing its `text` into an AST and traversing it."""
+    """
+    Parse a `CodeChunk` by parsing its `text` into an AST and traversing it.
+    """
 
     imports: typing.List[str]
     declares: typing.List[typing.Union[Variable, Function]]
@@ -402,7 +424,9 @@ class CodeChunkParser:
             typing.Sequence[typing.Union[ast.stmt, ast.expr, ast.comprehension]],
         ],
     ) -> None:
-        """General statement parser that delegates to parsers for specific parser types."""
+        """
+        General statement parser that delegates to parsers for specific parser types.
+        """
         if isinstance(statement, list):
             for sub_statement in statement:
                 self.parse_statement(sub_statement)
@@ -552,7 +576,9 @@ class CodeChunkParser:
             self.parse_statement(statement_value)
 
     def _recurse_attribute(self, ref: typing.Union[ast.stmt, ast.expr]) -> str:
-        """Recurse through an attribute to get the actual variable (e.g. `x.y.z` -> `x`)."""
+        """
+        Recurse through an attribute to get the actual variable (e.g. `x.y.z` -> `x`).
+        """
         if hasattr(ref, "value"):
             if isinstance(ref.value, ast.Attribute):  # type: ignore
                 return self._recurse_attribute(ref.value)  # type: ignore
@@ -610,16 +636,22 @@ class CodeChunkParser:
         return None
 
     def _parse_bin_op(self, statement: ast.BinOp) -> None:
-        """Parse a binary operation, e.g `a + b`, `c - d`."""
+        """
+        Parse a binary operation, e.g `a + b`, `c - d`.
+        """
         self.parse_statement(statement.left)
         self.parse_statement(statement.right)
 
     def _parse_bool_op(self, statement: ast.BoolOp) -> None:
-        """Pares a boolean operation, e.g. `a or b`, `d or e`."""
+        """
+        Parse a boolean operation, e.g. `a or b`, `d or e`.
+        """
         self.parse_statement(statement.values)
 
     def _parse_call(self, statement: ast.Call) -> None:
-        """Parse a function call to extract the variables used."""
+        """
+        Parse a function call to extract the variables used.
+        """
         if hasattr(statement, "args"):
             self.parse_statement(statement.args)
 
@@ -628,7 +660,9 @@ class CodeChunkParser:
                 self.parse_statement(keyword.value)
 
     def _parse_function_def(self, statement: ast.FunctionDef) -> None:
-        """Parse a function definition to extract the `Parameter`s it accepts."""
+        """
+        Parse a function definition to extract the `Parameter`s it accepts.
+        """
         if statement.name in self.seen_vars:
             return
 
@@ -720,13 +754,17 @@ class CodeChunkParser:
         self.parse_statement(statement.value)
 
     def _parse_if_while(self, statement: typing.Union[ast.If, ast.While]) -> None:
-        """Parse the test (condition), body, and `elif`/`else` statements of an `if` or `while`."""
+        """
+        Parse the test (condition), body, and `elif`/`else` statements of an `if` or `while`.
+        """
         self.parse_statement(statement.test)
         self.parse_statement(statement.body)
         self.parse_statement(statement.orelse)
 
     def _parse_compare(self, statement: ast.Compare) -> None:
-        """Parse a comparison statement (e.g. a > b, c < d, etc) and add the variables it uses to the `uses` list."""
+        """
+        Parse a comparison statement (e.g. a > b, c < d, etc) and add the variables it uses to the `uses` list.
+        """
         self.parse_statement(statement.left)
         self.parse_statement(statement.comparators)
 
@@ -743,7 +781,9 @@ class CodeChunkParser:
         self.parse_statement(statement.orelse)
 
     def _parse_try(self, statement: ast.Try) -> None:
-        """Parse a `try`/`except`/`finally`/`else` statement."""
+        """
+        Parse a `try`/`except`/`finally`/`else` statement.
+        """
         self.parse_statement(statement.handlers)  # type: ignore  # Doesn't seem to understand List[ExceptHandler]
         # is valid
         self.parse_statement(statement.body)
@@ -751,29 +791,39 @@ class CodeChunkParser:
         self.parse_statement(statement.orelse)
 
     def _parse_except_handler(self, statement: ast.ExceptHandler) -> None:
-        """Parse an `except` handler (i.e. parse the statements in its `body`)."""
+        """
+        Parse an `except` handler (i.e. parse the statements in its `body`).
+        """
         self.parse_statement(statement.body)
 
     def _parse_with(self, statement: ast.With) -> None:
-        """Parse a `with` statement (i.e. parse the statements in its `body`)."""
+        """
+        Parse a `with` statement (i.e. parse the statements in its `body`).
+        """
         self.parse_statement(statement.body)
 
     def _parse_list_or_set_comprehension(
         self, statement: typing.Union[ast.ListComp, ast.SetComp]
     ) -> None:
-        """Parse a list or set comprehension (they have the same interface)."""
+        """
+        Parse a list or set comprehension (they have the same interface).
+        """
         if not isinstance(statement.elt, ast.Name):
             # skip simple name assigns since they aren't really usable after the loop
             self.parse_statement(statement.elt)
         self.parse_statement(statement.generators)
 
     def _parse_dict_comprehension(self, statement: ast.DictComp) -> None:
-        """Parse a dict comprehension."""
+        """
+        Parse a dict comprehension.
+        """
         self.parse_statement(statement.generators)
         self.parse_statement(statement.value)
 
     def _parse_comprehension(self, statement: ast.comprehension) -> None:
-        """Parse a generator such as used in a comprehension."""
+        """
+        Parse a generator such as used in a comprehension.
+        """
         target = statement.target
 
         if hasattr(target, "elts"):

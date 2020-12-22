@@ -111,7 +111,9 @@ def test_compile_article():
 
 
 def test_import_appending():
-    """Found imports in a piece of code should be added to the list of imports the code chunk already specifies."""
+    """
+    Found imports in a piece of code should be added to the list of imports the code chunk already specifies.
+    """
     c = CodeChunk(
         "import moda\nimport modb\nimport modc",
         imports=["modc", "modd"],
@@ -129,7 +131,9 @@ def test_import_appending():
 
 
 def test_import_with_semaphore():
-    """If a `CodeChunk`'s imports has an empty string element then no imports should be added to its list."""
+    """
+    If a `CodeChunk`'s imports has an empty string element then no imports should be added to its list.
+    """
     c = CodeChunk(
         "import moda\nimport modb",
         imports=["modc", "modd", ""],

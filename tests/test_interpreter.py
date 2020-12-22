@@ -41,7 +41,9 @@ def test_catch_code_expression_error():
 @unittest.mock.patch("stencila.pyla.interpreter.exec")
 @unittest.mock.patch("stencila.pyla.interpreter.eval")
 def test_execute_code_chunk_without_ast(mock_eval, mock_exec, mock_logger):
-    """If parsing the code fails to generate an AST then the code should not attempt to be executed."""
+    """
+    If parsing the code fails to generate an AST then the code should not attempt to be executed.
+    """
     execute_code_chunk("invalid code")
     assert mock_logger.info.called
     assert mock_exec.called is False  # make sure nothing is executed
@@ -49,13 +51,17 @@ def test_execute_code_chunk_without_ast(mock_eval, mock_exec, mock_logger):
 
 
 def test_output_capture():
-    """Output to STDOUT should be captured in the CodeChunk's outputs property."""
+    """
+    Output to STDOUT should be captured in the CodeChunk's outputs property.
+    """
     cc = execute_code_chunk("print('Hello world!')")
     assert cc.outputs == ["Hello world!\n"]
 
 
 def test_result_capture():
-    """Variable assignment should not be captured as an output, return values from functions should (for example)."""
+    """
+    Variable assignment should not be captured as an output, return values from functions should (for example).
+    """
     cc = execute_code_chunk("a = 5\ndef add_five(b):\n    return b + 5\nadd_five(a)")
     assert cc.outputs == [10]
 
@@ -90,7 +96,9 @@ def test_code_chunk_exception_capture():
 
 
 def test_sempahore_skipping():
-    """If decode_output returns a SKIP_OUTPUT_SEMAPHORE then it should not be added to the outputs array."""
+    """
+    If decode_output returns a SKIP_OUTPUT_SEMAPHORE then it should not be added to the outputs array.
+    """
     i = Interpreter()
     outputs = []
 
