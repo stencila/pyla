@@ -2,6 +2,13 @@
 
 <!--next-version-placeholder-->
 
+## v0.3.1 (2020-12-22)
+### Fix
+* **Interpreter:** Make compatible with Python 3.8 ([`2a4add6`](https://github.com/stencila/pyla/commit/2a4add6fa97b7b393e6d0df40e8e188ebb4bfe0e))
+
+### Documentation
+* ***:** Add pydocstyle and use consistent docstring style ([`c1b2a1c`](https://github.com/stencila/pyla/commit/c1b2a1c97347119b91b7bb75d370f5bf7e4bd383))
+
 ## v0.3.0 (2020-12-11)
 ### Feature
 * ***:** Remove unused commands and functions ([`bbdf100`](https://github.com/stencila/pyla/commit/bbdf10021ac8e8ed8e78a053d04e48d226aa0aa6))
