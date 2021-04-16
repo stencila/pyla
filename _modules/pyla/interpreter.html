@@ -1,0 +1,695 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pyla.interpreter &#8212; pyla  documentation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for pyla.interpreter</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This is for interpreting and executing an executable document in JSON format. It can be called from the command line:</span>
+
+<span class="sd">python3 interpreter.py &lt;infile&gt; &lt;outfile&gt; [document parameters]</span>
+
+<span class="sd">See README.md for more information.</span>
+
+<span class="sd">Warning: `eval` and `exec` are used to run code in the document. Don&#39;t execute documents that you haven&#39;t verified</span>
+<span class="sd">yourself.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">ast</span>
+<span class="kn">import</span> <span class="nn">base64</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">typing</span>
+<span class="kn">from</span> <span class="nn">contextlib</span> <span class="kn">import</span> <span class="n">redirect_stdout</span>
+<span class="kn">from</span> <span class="nn">io</span> <span class="kn">import</span> <span class="n">BytesIO</span><span class="p">,</span> <span class="n">TextIOWrapper</span>
+
+<span class="kn">import</span> <span class="nn">astor</span>
+<span class="kn">from</span> <span class="nn">stencila.schema.types</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ArrayValidator</span><span class="p">,</span>
+    <span class="n">Article</span><span class="p">,</span>
+    <span class="n">BooleanValidator</span><span class="p">,</span>
+    <span class="n">CodeChunk</span><span class="p">,</span>
+    <span class="n">CodeExpression</span><span class="p">,</span>
+    <span class="n">Datatable</span><span class="p">,</span>
+    <span class="n">DatatableColumn</span><span class="p">,</span>
+    <span class="n">Entity</span><span class="p">,</span>
+    <span class="n">Function</span><span class="p">,</span>
+    <span class="n">ImageObject</span><span class="p">,</span>
+    <span class="n">IntegerValidator</span><span class="p">,</span>
+    <span class="n">Node</span><span class="p">,</span>
+    <span class="n">NumberValidator</span><span class="p">,</span>
+    <span class="n">Parameter</span><span class="p">,</span>
+    <span class="n">StringValidator</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">.errors</span> <span class="kn">import</span> <span class="n">CapabilityError</span>
+<span class="kn">from</span> <span class="nn">.parser</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">CodeChunkExecution</span><span class="p">,</span>
+    <span class="n">CodeChunkParser</span><span class="p">,</span>
+    <span class="n">CodeChunkParseResult</span><span class="p">,</span>
+    <span class="n">set_code_error</span><span class="p">,</span>
+    <span class="n">simple_code_chunk_parse</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span> <span class="o">&gt;</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">8</span><span class="p">):</span>
+    <span class="n">AstModule</span> <span class="o">=</span> <span class="n">ast</span><span class="o">.</span><span class="n">Module</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">AstModule</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">nodelist</span><span class="p">,</span> <span class="n">type_ignores</span><span class="p">:</span> <span class="n">ast</span><span class="o">.</span><span class="n">Module</span><span class="p">(</span><span class="n">nodelist</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">matplotlib.artist</span>
+    <span class="kn">import</span> <span class="nn">matplotlib.figure</span>
+    <span class="kn">from</span> <span class="nn">matplotlib.cbook</span> <span class="kn">import</span> <span class="n">silent_list</span>
+
+    <span class="c1"># pylint: disable=C0103</span>
+    <span class="n">MPLFigure</span> <span class="o">=</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">figure</span><span class="o">.</span><span class="n">Figure</span>
+    <span class="c1"># pylint: disable=C0103</span>
+    <span class="n">MPLArtist</span> <span class="o">=</span> <span class="n">matplotlib</span><span class="o">.</span><span class="n">artist</span><span class="o">.</span><span class="n">Artist</span>
+    <span class="n">MPL_AVAILABLE</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="c1"># pylint: disable=R0903</span>
+<div class="viewcode-block" id="MPLFigure"><a class="viewcode-back" href="../../api.html#pyla.interpreter.MPLFigure">[docs]</a>    <span class="k">class</span> <span class="nc">MPLFigure</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
+        <span class="sd">&quot;&quot;&quot;A fake MPLFigure to prevent ReferenceErrors later.&quot;&quot;&quot;</span></div>
+
+    <span class="c1"># pylint: disable=R0903</span>
+<div class="viewcode-block" id="MLPArtist"><a class="viewcode-back" href="../../api.html#pyla.interpreter.MLPArtist">[docs]</a>    <span class="k">class</span> <span class="nc">MLPArtist</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
+        <span class="sd">&quot;&quot;&quot;A fake MLPArtist to prevent ReferenceErrors later.&quot;&quot;&quot;</span></div>
+
+    <span class="c1"># pylint: disable=R0903,C0103</span>
+<div class="viewcode-block" id="silent_list"><a class="viewcode-back" href="../../api.html#pyla.interpreter.silent_list">[docs]</a>    <span class="k">class</span> <span class="nc">silent_list</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
+        <span class="sd">&quot;&quot;&quot;A fake silent_list to prevent ReferenceErrors later.&quot;&quot;&quot;</span></div>
+
+    <span class="n">MPL_AVAILABLE</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">numpy</span>
+    <span class="kn">from</span> <span class="nn">pandas</span> <span class="kn">import</span> <span class="n">DataFrame</span>
+
+    <span class="n">PANDAS_AVAILABLE</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="c1"># pylint: disable=R0903</span>
+<div class="viewcode-block" id="DataFrame"><a class="viewcode-back" href="../../api.html#pyla.interpreter.DataFrame">[docs]</a>    <span class="k">class</span> <span class="nc">DataFrame</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
+        <span class="sd">&quot;&quot;&quot;A fake DataFrame to prevent ReferenceErrors later.&quot;&quot;&quot;</span></div>
+
+    <span class="n">PANDAS_AVAILABLE</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="n">LOGGER</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="n">LOGGER</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">NullHandler</span><span class="p">())</span>
+
+<span class="n">CHUNK_PREVIEW_LENGTH</span> <span class="o">=</span> <span class="mi">20</span>
+
+<span class="n">ExecutableCode</span> <span class="o">=</span> <span class="n">typing</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">CodeChunkExecution</span><span class="p">,</span> <span class="n">CodeExpression</span><span class="p">]</span>
+<span class="n">StatementRuntime</span> <span class="o">=</span> <span class="n">typing</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">typing</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">typing</span><span class="o">.</span><span class="n">Callable</span><span class="p">]</span>
+
+<span class="c1"># Used to indicate that a particular output should not be added to outputs (c.f. a valid `None` value)</span>
+<span class="n">SKIP_OUTPUT_SEMAPHORE</span> <span class="o">=</span> <span class="nb">object</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="CodeTimer"><a class="viewcode-back" href="../../api.html#pyla.interpreter.CodeTimer">[docs]</a><span class="k">class</span> <span class="nc">CodeTimer</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Context handler for timing code, use inside a `with` statement.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_start_time</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span>
+    <span class="n">duration</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_start_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc_type</span><span class="p">,</span> <span class="n">exc_val</span><span class="p">,</span> <span class="n">exc_tb</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">duration</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_start_time</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">duration_seconds</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Calculate the duration (time between `__enter__` and `__exit__` in microseconds.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">duration</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;CodeTimer has not yet been run&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">duration</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="StdoutBuffer"><a class="viewcode-back" href="../../api.html#pyla.interpreter.StdoutBuffer">[docs]</a><span class="k">class</span> <span class="nc">StdoutBuffer</span><span class="p">(</span><span class="n">TextIOWrapper</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Used for capturing output to stdout.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="StdoutBuffer.write"><a class="viewcode-back" href="../../api.html#pyla.interpreter.StdoutBuffer.write">[docs]</a>    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">string</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">string</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">string</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">string</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="DocumentCompilationResult"><a class="viewcode-back" href="../../api.html#pyla.interpreter.DocumentCompilationResult">[docs]</a><span class="k">class</span> <span class="nc">DocumentCompilationResult</span><span class="p">(</span><span class="n">typing</span><span class="o">.</span><span class="n">NamedTuple</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Stores references to Parameters and Code that is parsed from a Document.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">parameters</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">Parameter</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">code</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">ExecutableCode</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span></div>
+
+
+<div class="viewcode-block" id="DocumentCompiler"><a class="viewcode-back" href="../../api.html#pyla.interpreter.DocumentCompiler">[docs]</a><span class="k">class</span> <span class="nc">DocumentCompiler</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parse an executable document (`Article`) and cache references to its parameters and code nodes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">TARGET_LANGUAGE</span> <span class="o">=</span> <span class="s2">&quot;python&quot;</span>
+
+    <span class="n">function_depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+
+<div class="viewcode-block" id="DocumentCompiler.compile"><a class="viewcode-back" href="../../api.html#pyla.interpreter.DocumentCompiler.compile">[docs]</a>    <span class="k">def</span> <span class="nf">compile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">Article</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DocumentCompilationResult</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compile an `Article` by walking it and finding `Parameter`s and `CodeChunk` or `CodeExpression` nodes.</span>
+
+<span class="sd">        These are set on a `DocumentCompilationResult` which can be passed to the `Interpreter`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">function_depth</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">dcr</span> <span class="o">=</span> <span class="n">DocumentCompilationResult</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">handle_item</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">dcr</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">dcr</span></div>
+
+<div class="viewcode-block" id="DocumentCompiler.handle_item"><a class="viewcode-back" href="../../api.html#pyla.interpreter.DocumentCompiler.handle_item">[docs]</a>    <span class="k">def</span> <span class="nf">handle_item</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">,</span> <span class="n">compilation_result</span><span class="p">:</span> <span class="n">DocumentCompilationResult</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parse any kind of dict, list of Entity.</span>
+
+<span class="sd">        Returns nothing but updates the passed in `DocumentCompilationResult`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">traverse_dict</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">compilation_result</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">traverse_list</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">compilation_result</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">Entity</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="p">(</span><span class="n">CodeChunk</span><span class="p">,</span> <span class="n">CodeExpression</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">item</span><span class="o">.</span><span class="n">programmingLanguage</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">TARGET_LANGUAGE</span>
+                <span class="p">):</span>  <span class="c1"># Only add Python code</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">handle_code</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">compilation_result</span><span class="p">)</span>
+
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">function_depth</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">compilation_result</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Adding </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">Function</span><span class="p">):</span>
+                <span class="c1"># This prevents treating a `Parameter` found inside `Function` as a document parameter</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">function_depth</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">traverse_dict</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">,</span> <span class="n">compilation_result</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">Function</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">function_depth</span> <span class="o">-=</span> <span class="mi">1</span></div>
+
+<div class="viewcode-block" id="DocumentCompiler.handle_code"><a class="viewcode-back" href="../../api.html#pyla.interpreter.DocumentCompiler.handle_code">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">handle_code</span><span class="p">(</span>
+        <span class="n">item</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">CodeChunk</span><span class="p">,</span> <span class="n">CodeExpression</span><span class="p">],</span>
+        <span class="n">compilation_result</span><span class="p">:</span> <span class="n">DocumentCompilationResult</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parse a CodeChunk or CodeExpression and add it to `compilation_result.code` list.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">CodeChunk</span><span class="p">):</span>
+            <span class="n">cc_result</span><span class="p">,</span> <span class="n">item</span> <span class="o">=</span> <span class="n">Interpreter</span><span class="o">.</span><span class="n">compile_code_chunk</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+
+            <span class="n">code_to_add</span> <span class="o">=</span> <span class="n">CodeChunkExecution</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">cc_result</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">ast</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">SyntaxError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># Probably will only be this</span>
+                <span class="n">set_code_error</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+            <span class="n">code_to_add</span> <span class="o">=</span> <span class="n">item</span>
+        <span class="n">compilation_result</span><span class="o">.</span><span class="n">code</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">code_to_add</span><span class="p">)</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Adding </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">item</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="DocumentCompiler.traverse_dict"><a class="viewcode-back" href="../../api.html#pyla.interpreter.DocumentCompiler.traverse_dict">[docs]</a>    <span class="k">def</span> <span class="nf">traverse_dict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">_dict</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">compilation_result</span><span class="p">:</span> <span class="n">DocumentCompilationResult</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Traverse into each item of a dict.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">_dict</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">handle_item</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="n">compilation_result</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DocumentCompiler.traverse_list"><a class="viewcode-back" href="../../api.html#pyla.interpreter.DocumentCompiler.traverse_list">[docs]</a>    <span class="k">def</span> <span class="nf">traverse_list</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">_list</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">List</span><span class="p">,</span> <span class="n">compilation_result</span><span class="p">:</span> <span class="n">DocumentCompilationResult</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Traverse into each element in a list.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">_list</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">handle_item</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="n">compilation_result</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Interpreter"><a class="viewcode-back" href="../../api.html#pyla.interpreter.Interpreter">[docs]</a><span class="k">class</span> <span class="nc">Interpreter</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Execute a list of code blocks, maintaining its own `globals` scope for this execution run.&quot;&quot;&quot;</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    List of values for the `programmingLanguage` property that are handled</span>
+<span class="sd">    by this interpreter.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">PROGRAMMING_LANGUAGES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;py&quot;</span><span class="p">,</span> <span class="s2">&quot;python&quot;</span><span class="p">]</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    JSON Schema specification of the types of nodes that this intertpreter&#39;s</span>
+<span class="sd">    `compile` and `execute` methods are capable of handling</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">CODE_CAPABILITIES</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;node&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;node&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;object&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="s2">&quot;programmingLanguage&quot;</span><span class="p">],</span>
+                <span class="s2">&quot;properties&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;enum&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;CodeChunk&quot;</span><span class="p">,</span> <span class="s2">&quot;CodeExpression&quot;</span><span class="p">]},</span>
+                    <span class="s2">&quot;programmingLanguage&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;enum&quot;</span><span class="p">:</span> <span class="n">PROGRAMMING_LANGUAGES</span><span class="p">},</span>
+                <span class="p">},</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The manifest of this interpreter&#39;s capabilities and addresses.</span>
+
+<span class="sd">    Conforms to Executa&#39;s</span>
+<span class="sd">    [Manifest](https://github.com/stencila/executa/blob/v1.4.0/src/base/Executor.ts#L63)</span>
+<span class="sd">    interface.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">MANIFEST</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s2">&quot;capabilities&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;compile&quot;</span><span class="p">:</span> <span class="n">CODE_CAPABILITIES</span><span class="p">,</span> <span class="s2">&quot;execute&quot;</span><span class="p">:</span> <span class="n">CODE_CAPABILITIES</span><span class="p">},</span>
+        <span class="s2">&quot;addresses&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;stdio&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;stdio&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;command&quot;</span><span class="p">:</span> <span class="n">sys</span><span class="o">.</span><span class="n">executable</span><span class="p">,</span>
+                <span class="s2">&quot;args&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;-m&quot;</span><span class="p">,</span> <span class="s2">&quot;stencila.pyla&quot;</span><span class="p">,</span> <span class="s2">&quot;serve&quot;</span><span class="p">],</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+    <span class="p">}</span>
+
+    <span class="nb">globals</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span>
+    <span class="nb">locals</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">globals</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">locals</span> <span class="o">=</span> <span class="p">{}</span>
+
+<div class="viewcode-block" id="Interpreter.compile_code_chunk"><a class="viewcode-back" href="../../api.html#pyla.interpreter.Interpreter.compile_code_chunk">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">compile_code_chunk</span><span class="p">(</span>
+        <span class="n">chunk</span><span class="p">:</span> <span class="n">CodeChunk</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">typing</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="n">CodeChunkParseResult</span><span class="p">,</span> <span class="n">CodeChunk</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compile a `CodeChunk`.</span>
+
+<span class="sd">        Returns a `CodeChunkParseResult` which is primarily needed for the AST, and the `CodeChunk` itself, which has</span>
+<span class="sd">        its code metadata properties set.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">parser</span> <span class="o">=</span> <span class="n">CodeChunkParser</span><span class="p">()</span>
+        <span class="n">cc_result</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+        <span class="n">chunk</span><span class="o">.</span><span class="n">imports</span> <span class="o">=</span> <span class="n">cc_result</span><span class="o">.</span><span class="n">combined_code_imports</span><span class="p">(</span><span class="n">chunk</span><span class="o">.</span><span class="n">imports</span><span class="p">)</span>
+        <span class="n">chunk</span><span class="o">.</span><span class="n">declares</span> <span class="o">=</span> <span class="n">cc_result</span><span class="o">.</span><span class="n">declares</span>
+        <span class="n">chunk</span><span class="o">.</span><span class="n">assigns</span> <span class="o">=</span> <span class="n">cc_result</span><span class="o">.</span><span class="n">assigns</span>
+        <span class="n">chunk</span><span class="o">.</span><span class="n">alters</span> <span class="o">=</span> <span class="n">cc_result</span><span class="o">.</span><span class="n">alters</span>
+        <span class="n">chunk</span><span class="o">.</span><span class="n">uses</span> <span class="o">=</span> <span class="n">cc_result</span><span class="o">.</span><span class="n">uses</span>
+        <span class="n">chunk</span><span class="o">.</span><span class="n">reads</span> <span class="o">=</span> <span class="n">cc_result</span><span class="o">.</span><span class="n">reads</span>
+
+        <span class="k">if</span> <span class="n">cc_result</span><span class="o">.</span><span class="n">error</span><span class="p">:</span>
+            <span class="n">set_code_error</span><span class="p">(</span><span class="n">chunk</span><span class="p">,</span> <span class="n">cc_result</span><span class="o">.</span><span class="n">error</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cc_result</span><span class="p">,</span> <span class="n">chunk</span></div>
+
+<div class="viewcode-block" id="Interpreter.compile"><a class="viewcode-back" href="../../api.html#pyla.interpreter.Interpreter.compile">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">compile</span><span class="p">(</span><span class="n">node</span><span class="p">:</span> <span class="n">Node</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Node</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compile a `CodeChunk`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">CodeChunk</span><span class="p">)</span> <span class="ow">and</span> <span class="n">Interpreter</span><span class="o">.</span><span class="n">is_python_code</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">Interpreter</span><span class="o">.</span><span class="n">compile_code_chunk</span><span class="p">(</span><span class="n">node</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">raise</span> <span class="n">CapabilityError</span><span class="p">(</span><span class="s2">&quot;compile&quot;</span><span class="p">,</span> <span class="n">node</span><span class="o">=</span><span class="n">node</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Interpreter.execute"><a class="viewcode-back" href="../../api.html#pyla.interpreter.Interpreter.execute">[docs]</a>    <span class="k">def</span> <span class="nf">execute</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">Node</span><span class="p">,</span> <span class="n">parameter_values</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Node</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Execute a `CodeChunk` or `CodeExpression`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">_locals</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">locals</span>
+        <span class="k">if</span> <span class="n">parameter_values</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">_locals</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">parameter_values</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">CodeExpression</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute_code_expression</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">_locals</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">CodeChunk</span><span class="p">):</span>
+            <span class="n">cce</span> <span class="o">=</span> <span class="n">simple_code_chunk_parse</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute_code_chunk</span><span class="p">(</span><span class="n">cce</span><span class="p">,</span> <span class="n">_locals</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">CodeChunkExecution</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute_code_chunk</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">_locals</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">CapabilityError</span><span class="p">(</span><span class="s2">&quot;execute&quot;</span><span class="p">,</span> <span class="n">node</span><span class="o">=</span><span class="n">node</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Interpreter.is_python_code"><a class="viewcode-back" href="../../api.html#pyla.interpreter.Interpreter.is_python_code">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">is_python_code</span><span class="p">(</span><span class="n">code</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">CodeChunk</span><span class="p">,</span> <span class="n">CodeExpression</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Is a `CodeChunk` or `CodeExpression` Python code?</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">code</span><span class="o">.</span><span class="n">programmingLanguage</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">Interpreter</span><span class="o">.</span><span class="n">PROGRAMMING_LANGUAGES</span></div>
+
+<div class="viewcode-block" id="Interpreter.execute_code_expression"><a class="viewcode-back" href="../../api.html#pyla.interpreter.Interpreter.execute_code_expression">[docs]</a>    <span class="k">def</span> <span class="nf">execute_code_expression</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">expression</span><span class="p">:</span> <span class="n">CodeExpression</span><span class="p">,</span> <span class="n">_locals</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CodeExpression</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Evaluate `CodeExpression.text`, and get the result. Catch any exception the occurs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># pylint: disable=W0123  # Disable warning that eval is being used.</span>
+            <span class="n">expression</span><span class="o">.</span><span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">decode_output</span><span class="p">(</span>
+                <span class="nb">eval</span><span class="p">(</span><span class="n">expression</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">globals</span><span class="p">,</span> <span class="n">_locals</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="c1"># pylint: disable=W0703  # we really don&#39;t know what Exception some eval&#39;d code might raise.</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">set_code_error</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">expression</span></div>
+
+<div class="viewcode-block" id="Interpreter.execute_code_chunk"><a class="viewcode-back" href="../../api.html#pyla.interpreter.Interpreter.execute_code_chunk">[docs]</a>    <span class="k">def</span> <span class="nf">execute_code_chunk</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">chunk_execution</span><span class="p">:</span> <span class="n">CodeChunkExecution</span><span class="p">,</span> <span class="n">_locals</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CodeChunk</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Execute a `CodeChunk` that has been parsed and stored in a `CodeChunkExecution`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">chunk</span><span class="p">,</span> <span class="n">parse_result</span> <span class="o">=</span> <span class="n">chunk_execution</span>
+
+        <span class="k">if</span> <span class="n">parse_result</span><span class="o">.</span><span class="n">chunk_ast</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;Not executing CodeChunk without AST: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">chunk</span><span class="o">.</span><span class="n">text</span><span class="p">[:</span><span class="n">CHUNK_PREVIEW_LENGTH</span><span class="p">],</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">chunk</span>
+
+        <span class="n">cc_outputs</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">duration</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="k">for</span> <span class="n">statement</span> <span class="ow">in</span> <span class="n">parse_result</span><span class="o">.</span><span class="n">chunk_ast</span><span class="o">.</span><span class="n">body</span><span class="p">:</span>
+            <span class="n">duration</span><span class="p">,</span> <span class="n">error_occurred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">execute_statement</span><span class="p">(</span>
+                <span class="n">statement</span><span class="p">,</span> <span class="n">chunk</span><span class="p">,</span> <span class="n">_locals</span><span class="p">,</span> <span class="n">cc_outputs</span><span class="p">,</span> <span class="n">duration</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">error_occurred</span><span class="p">:</span>
+                <span class="k">break</span>  <span class="c1"># stop executing the rest of the statements in the chunk after capturing the outputs</span>
+
+        <span class="n">chunk</span><span class="o">.</span><span class="n">duration</span> <span class="o">=</span> <span class="n">duration</span>
+
+        <span class="k">if</span> <span class="n">MPL_AVAILABLE</span><span class="p">:</span>
+            <span class="c1"># Because of the way matplotlib might progressively build an image, only keep the last MPL that was</span>
+            <span class="c1"># generated for a specific code chunk</span>
+            <span class="n">mpl_output_indexes</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">output</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">cc_outputs</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">value_is_mpl</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+            <span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">mpl_output_indexes</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">mpl_output_indexes</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+                    <span class="c1"># remove all but the last mpl</span>
+                    <span class="n">cc_outputs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+
+                <span class="n">new_last_index</span> <span class="o">=</span> <span class="n">mpl_output_indexes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="p">(</span>
+                    <span class="nb">len</span><span class="p">(</span><span class="n">mpl_output_indexes</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+                <span class="p">)</span>  <span class="c1"># output will have shifted back</span>
+
+                <span class="n">cc_outputs</span><span class="p">[</span><span class="n">new_last_index</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">decode_mpl</span><span class="p">()</span>
+
+        <span class="n">chunk</span><span class="o">.</span><span class="n">outputs</span> <span class="o">=</span> <span class="n">cc_outputs</span>
+
+        <span class="k">return</span> <span class="n">chunk</span></div>
+
+<div class="viewcode-block" id="Interpreter.execute_statement"><a class="viewcode-back" href="../../api.html#pyla.interpreter.Interpreter.execute_statement">[docs]</a>    <span class="k">def</span> <span class="nf">execute_statement</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">statement</span><span class="p">:</span> <span class="n">ast</span><span class="o">.</span><span class="n">stmt</span><span class="p">,</span>
+        <span class="n">chunk</span><span class="p">:</span> <span class="n">CodeChunk</span><span class="p">,</span>
+        <span class="n">_locals</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">],</span>
+        <span class="n">cc_outputs</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">duration</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">typing</span><span class="o">.</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Execute a single AST statement.</span>
+
+<span class="sd">        The statement will be executed with `eval` or `exec` depending on its type (see `parse_statement_runtime`).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">error_occurred</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="n">capture_result</span><span class="p">,</span> <span class="n">code_to_run</span><span class="p">,</span> <span class="n">run_function</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_statement_runtime</span><span class="p">(</span>
+            <span class="n">statement</span>
+        <span class="p">)</span>
+        <span class="n">stdout</span> <span class="o">=</span> <span class="n">StdoutBuffer</span><span class="p">(</span><span class="n">BytesIO</span><span class="p">(),</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">encoding</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">with</span> <span class="n">redirect_stdout</span><span class="p">(</span><span class="n">stdout</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">with</span> <span class="n">CodeTimer</span><span class="p">()</span> <span class="k">as</span> <span class="n">code_timer</span><span class="p">:</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="n">run_function</span><span class="p">(</span><span class="n">code_to_run</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">globals</span><span class="p">,</span> <span class="n">_locals</span><span class="p">)</span>
+                <span class="n">duration</span> <span class="o">+=</span> <span class="n">code_timer</span><span class="o">.</span><span class="n">duration_seconds</span>
+            <span class="c1"># pylint: disable=W0703  # we really don&#39;t know what Exception some exec&#39;d code might raise.</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="n">error_occurred</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">set_code_error</span><span class="p">(</span><span class="n">chunk</span><span class="p">,</span> <span class="n">exc</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">capture_result</span> <span class="ow">and</span> <span class="n">result</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_output</span><span class="p">(</span><span class="n">cc_outputs</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span>
+
+        <span class="n">stdout</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">std_out_output</span> <span class="o">=</span> <span class="n">stdout</span><span class="o">.</span><span class="n">buffer</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">std_out_output</span><span class="p">:</span>
+            <span class="n">cc_outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">std_out_output</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf8&quot;</span><span class="p">))</span>
+
+        <span class="c1"># could save a variable by returning `duration` as `None` if an error occurs but I think that breaks readability</span>
+        <span class="k">return</span> <span class="n">duration</span><span class="p">,</span> <span class="n">error_occurred</span></div>
+
+<div class="viewcode-block" id="Interpreter.add_output"><a class="viewcode-back" href="../../api.html#pyla.interpreter.Interpreter.add_output">[docs]</a>    <span class="k">def</span> <span class="nf">add_output</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">cc_outputs</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">List</span><span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">],</span> <span class="n">result</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Any</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add an output to cc_outputs.</span>
+
+<span class="sd">        Should be inside `execute_statement` as it&#39;s only used there, but pylint complains about too many local</span>
+<span class="sd">        variables.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">decoded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">decode_output</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">decoded</span> <span class="o">!=</span> <span class="n">SKIP_OUTPUT_SEMAPHORE</span><span class="p">:</span>
+            <span class="n">cc_outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">decoded</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Interpreter.parse_statement_runtime"><a class="viewcode-back" href="../../api.html#pyla.interpreter.Interpreter.parse_statement_runtime">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">parse_statement_runtime</span><span class="p">(</span><span class="n">statement</span><span class="p">:</span> <span class="n">ast</span><span class="o">.</span><span class="n">stmt</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StatementRuntime</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Determine the information to execute a statement.</span>
+
+<span class="sd">        Returns the function with which to execute a statement (`eval` or `exec`), whether its output should be captured</span>
+<span class="sd">        or not, and the compiled code to execute.</span>
+
+<span class="sd">        See the other comments below on how/why these functions are chosen.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">statement</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">Expr</span><span class="p">):</span>
+            <span class="c1"># An expression is something that we want to capture the result of - this could be something like</span>
+            <span class="c1"># `a + 3` or a function call (not an assignment). It must be executed with `eval`. Since `eval` can&#39;t</span>
+            <span class="c1"># execute compiled code, `astor` is used to convert it back to source code.</span>
+            <span class="n">capture_result</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">run_function</span> <span class="o">=</span> <span class="nb">eval</span>
+            <span class="n">code_to_run</span> <span class="o">=</span> <span class="n">astor</span><span class="o">.</span><span class="n">to_source</span><span class="p">(</span><span class="n">statement</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># We don&#39;t care about the result of this call (it could just be an assignment, update or even function</span>
+            <span class="c1"># definition) so it can be executed with `exec`.</span>
+            <span class="n">capture_result</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">run_function</span> <span class="o">=</span> <span class="n">exec</span>
+            <span class="n">mod</span> <span class="o">=</span> <span class="n">AstModule</span><span class="p">([</span><span class="n">statement</span><span class="p">],</span> <span class="p">[])</span>
+            <span class="n">code_to_run</span> <span class="o">=</span> <span class="nb">compile</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span> <span class="s2">&quot;&lt;ast&gt;&quot;</span><span class="p">,</span> <span class="s2">&quot;exec&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">capture_result</span><span class="p">,</span> <span class="n">code_to_run</span><span class="p">,</span> <span class="n">run_function</span></div>
+
+<div class="viewcode-block" id="Interpreter.value_is_mpl"><a class="viewcode-back" href="../../api.html#pyla.interpreter.Interpreter.value_is_mpl">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">value_is_mpl</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Basic type checking to determine if a variable is a matplotlib figure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">MPL_AVAILABLE</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="n">MPLFigure</span><span class="p">,</span> <span class="n">MPLArtist</span><span class="p">))</span> <span class="ow">or</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+            <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">MPLArtist</span><span class="p">)</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="Interpreter.decode_mpl"><a class="viewcode-back" href="../../api.html#pyla.interpreter.Interpreter.decode_mpl">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">decode_mpl</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">ImageObject</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Decode a matplotlib `MPLFigure` or `MPLArtist` into an `ImageObject`.</span>
+
+<span class="sd">        The `matplotlib.pyplot.savefig` function just saves the current MPL figure that&#39;s in the context.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">image</span> <span class="o">=</span> <span class="n">BytesIO</span><span class="p">()</span>
+        <span class="n">matplotlib</span><span class="o">.</span><span class="n">pyplot</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;png&quot;</span><span class="p">)</span>
+        <span class="n">src</span> <span class="o">=</span> <span class="s2">&quot;data:image/png;base64,&quot;</span> <span class="o">+</span> <span class="n">base64</span><span class="o">.</span><span class="n">encodebytes</span><span class="p">(</span><span class="n">image</span><span class="o">.</span><span class="n">getvalue</span><span class="p">())</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">ImageObject</span><span class="p">(</span><span class="n">src</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Interpreter.decode_dataframe"><a class="viewcode-back" href="../../api.html#pyla.interpreter.Interpreter.decode_dataframe">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">decode_dataframe</span><span class="p">(</span><span class="n">data_frame</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Datatable</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Decode a pandas `DataFrame` into a `Datatable`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">columns</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">column_name</span> <span class="ow">in</span> <span class="n">data_frame</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="n">column</span> <span class="o">=</span> <span class="n">data_frame</span><span class="p">[</span><span class="n">column_name</span><span class="p">]</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="n">column</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">column</span><span class="o">.</span><span class="n">dtype</span> <span class="ow">in</span> <span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">bool_</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">bool8</span><span class="p">):</span>
+                <span class="n">validator</span> <span class="o">=</span> <span class="n">BooleanValidator</span><span class="p">()</span>
+                <span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="nb">bool</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">values</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">column</span><span class="o">.</span><span class="n">dtype</span> <span class="ow">in</span> <span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">int8</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int16</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">int64</span><span class="p">):</span>
+                <span class="n">validator</span> <span class="o">=</span> <span class="n">IntegerValidator</span><span class="p">()</span>
+                <span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">values</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">column</span><span class="o">.</span><span class="n">dtype</span> <span class="ow">in</span> <span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">float16</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">float64</span><span class="p">):</span>
+                <span class="n">validator</span> <span class="o">=</span> <span class="n">NumberValidator</span><span class="p">()</span>
+                <span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">row</span><span class="p">)</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">values</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">column</span><span class="o">.</span><span class="n">dtype</span> <span class="ow">in</span> <span class="p">(</span><span class="n">numpy</span><span class="o">.</span><span class="n">str_</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">unicode_</span><span class="p">,):</span>
+                <span class="n">validator</span> <span class="o">=</span> <span class="n">StringValidator</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">validator</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="n">columns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">DatatableColumn</span><span class="p">(</span>
+                    <span class="n">column_name</span><span class="p">,</span>
+                    <span class="n">values</span><span class="p">,</span>
+                    <span class="n">validator</span><span class="o">=</span><span class="n">ArrayValidator</span><span class="p">(</span><span class="n">itemsValidator</span><span class="o">=</span><span class="n">validator</span><span class="p">),</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">Datatable</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Interpreter.decode_output"><a class="viewcode-back" href="../../api.html#pyla.interpreter.Interpreter.decode_output">[docs]</a>    <span class="k">def</span> <span class="nf">decode_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if the output is convertible from a special data type to a Stencila type.</span>
+
+<span class="sd">        If not, just return the original object.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">MPL_AVAILABLE</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">silent_list</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">SKIP_OUTPUT_SEMAPHORE</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">decode_output</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">output</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+            <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">decode_output</span><span class="p">(</span><span class="n">item</span><span class="p">)</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">output</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">DataFrame</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">decode_dataframe</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">PANDAS_AVAILABLE</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">output</span><span class="p">,</span> <span class="n">numpy</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">output</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">output</span></div></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">pyla</a></h1>
+
+
+
+<p class="blurb">Python interpreter for executable documents</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=stencila&repo=pyla&type=mark&count=True&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">API</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Stencila and contributors.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.4.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

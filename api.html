@@ -1,0 +1,598 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
+    <title>API &#8212; pyla  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="🐍 Pyla" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="api">
+<h1>API<a class="headerlink" href="#api" title="Permalink to this headline">¶</a></h1>
+<section id="parser">
+<h2>Parser<a class="headerlink" href="#parser" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="module-pyla.interpreter">
+<span id="interpreter"></span><h2>Interpreter<a class="headerlink" href="#module-pyla.interpreter" title="Permalink to this headline">¶</a></h2>
+<p>This is for interpreting and executing an executable document in JSON format. It can be called from the command line:</p>
+<p>python3 interpreter.py <span class="raw-html-m2r"><infile></span> <span class="raw-html-m2r"><outfile></span> [document parameters]</p>
+<p>See README.md for more information.</p>
+<p>Warning: <code class="docutils literal notranslate"><span class="pre">eval</span></code> and <code class="docutils literal notranslate"><span class="pre">exec</span></code> are used to run code in the document. Don’t execute documents that you haven’t verified
+yourself.</p>
+<dl class="py class">
+<dt id="pyla.interpreter.silent_list">
+<em class="property">class </em><code class="sig-prename descclassname">pyla.interpreter.</code><code class="sig-name descname">silent_list</code><a class="reference internal" href="_modules/pyla/interpreter.html#silent_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.interpreter.silent_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>A fake silent_list to prevent ReferenceErrors later.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="pyla.interpreter.MPLFigure">
+<em class="property">class </em><code class="sig-prename descclassname">pyla.interpreter.</code><code class="sig-name descname">MPLFigure</code><a class="reference internal" href="_modules/pyla/interpreter.html#MPLFigure"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.interpreter.MPLFigure" title="Permalink to this definition">¶</a></dt>
+<dd><p>A fake MPLFigure to prevent ReferenceErrors later.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="pyla.interpreter.DataFrame">
+<em class="property">class </em><code class="sig-prename descclassname">pyla.interpreter.</code><code class="sig-name descname">DataFrame</code><a class="reference internal" href="_modules/pyla/interpreter.html#DataFrame"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.interpreter.DataFrame" title="Permalink to this definition">¶</a></dt>
+<dd><p>A fake DataFrame to prevent ReferenceErrors later.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="pyla.interpreter.CodeTimer">
+<em class="property">class </em><code class="sig-prename descclassname">pyla.interpreter.</code><code class="sig-name descname">CodeTimer</code><a class="reference internal" href="_modules/pyla/interpreter.html#CodeTimer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.interpreter.CodeTimer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Context handler for timing code, use inside a <code class="docutils literal notranslate"><span class="pre">with</span></code> statement.</p>
+<dl class="py method">
+<dt id="pyla.interpreter.CodeTimer.duration_seconds">
+<em class="property">property </em><code class="sig-name descname">duration_seconds</code><a class="headerlink" href="#pyla.interpreter.CodeTimer.duration_seconds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate the duration (time between <code class="docutils literal notranslate"><span class="pre">__enter__</span></code> and <code class="docutils literal notranslate"><span class="pre">__exit__</span></code> in microseconds.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="pyla.interpreter.StdoutBuffer">
+<em class="property">class </em><code class="sig-prename descclassname">pyla.interpreter.</code><code class="sig-name descname">StdoutBuffer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">buffer</span></em>, <em class="sig-param"><span class="n">encoding</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">errors</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">newline</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">line_buffering</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">write_through</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyla/interpreter.html#StdoutBuffer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.interpreter.StdoutBuffer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used for capturing output to stdout.</p>
+<dl class="py method">
+<dt id="pyla.interpreter.StdoutBuffer.write">
+<code class="sig-name descname">write</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">string</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.9)">bytes</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)">int</a><a class="reference internal" href="_modules/pyla/interpreter.html#StdoutBuffer.write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.interpreter.StdoutBuffer.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write string to stream.
+Returns the number of characters written (which is always equal to
+the length of the string).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="pyla.interpreter.DocumentCompilationResult">
+<em class="property">class </em><code class="sig-prename descclassname">pyla.interpreter.</code><code class="sig-name descname">DocumentCompilationResult</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">parameters</span><span class="p">:</span> <span class="n">List<span class="p">[</span>stencila.schema.types.Parameter<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">[]</span></em>, <em class="sig-param"><span class="n">code</span><span class="p">:</span> <span class="n">List<span class="p">[</span>Union<span class="p">[</span>pyla.parser.CodeChunkExecution<span class="p">, </span>stencila.schema.types.CodeExpression<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">[]</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyla/interpreter.html#DocumentCompilationResult"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.interpreter.DocumentCompilationResult" title="Permalink to this definition">¶</a></dt>
+<dd><p>Stores references to Parameters and Code that is parsed from a Document.</p>
+<dl class="py attribute">
+<dt id="pyla.interpreter.DocumentCompilationResult.parameters">
+<code class="sig-name descname">parameters</code><em class="property">: List<span class="p">[</span>stencila.schema.types.Parameter<span class="p">]</span></em><a class="headerlink" href="#pyla.interpreter.DocumentCompilationResult.parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 0</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pyla.interpreter.DocumentCompilationResult.code">
+<code class="sig-name descname">code</code><em class="property">: List<span class="p">[</span>Union<span class="p">[</span>pyla.parser.CodeChunkExecution<span class="p">, </span>stencila.schema.types.CodeExpression<span class="p">]</span><span class="p">]</span></em><a class="headerlink" href="#pyla.interpreter.DocumentCompilationResult.code" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alias for field number 1</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="pyla.interpreter.DocumentCompiler">
+<em class="property">class </em><code class="sig-prename descclassname">pyla.interpreter.</code><code class="sig-name descname">DocumentCompiler</code><a class="reference internal" href="_modules/pyla/interpreter.html#DocumentCompiler"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.interpreter.DocumentCompiler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse an executable document (<code class="docutils literal notranslate"><span class="pre">Article</span></code>) and cache references to its parameters and code nodes.</p>
+<dl class="py method">
+<dt id="pyla.interpreter.DocumentCompiler.compile">
+<code class="sig-name descname">compile</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">source</span><span class="p">:</span> <span class="n">stencila.schema.types.Article</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#pyla.interpreter.DocumentCompilationResult" title="pyla.interpreter.DocumentCompilationResult">pyla.interpreter.DocumentCompilationResult</a><a class="reference internal" href="_modules/pyla/interpreter.html#DocumentCompiler.compile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.interpreter.DocumentCompiler.compile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compile an <code class="docutils literal notranslate"><span class="pre">Article</span></code> by walking it and finding <code class="docutils literal notranslate"><span class="pre">Parameter</span></code>s and <code class="docutils literal notranslate"><span class="pre">CodeChunk</span></code> or <code class="docutils literal notranslate"><span class="pre">CodeExpression</span></code> nodes.</p>
+<p>These are set on a <code class="docutils literal notranslate"><span class="pre">DocumentCompilationResult</span></code> which can be passed to the <code class="docutils literal notranslate"><span class="pre">Interpreter</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyla.interpreter.DocumentCompiler.handle_item">
+<code class="sig-name descname">handle_item</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">item</span><span class="p">:</span> <span class="n">Any</span></em>, <em class="sig-param"><span class="n">compilation_result</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#pyla.interpreter.DocumentCompilationResult" title="pyla.interpreter.DocumentCompilationResult">pyla.interpreter.DocumentCompilationResult</a></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)">None</a><a class="reference internal" href="_modules/pyla/interpreter.html#DocumentCompiler.handle_item"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.interpreter.DocumentCompiler.handle_item" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse any kind of dict, list of Entity.</p>
+<p>Returns nothing but updates the passed in <code class="docutils literal notranslate"><span class="pre">DocumentCompilationResult</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyla.interpreter.DocumentCompiler.handle_code">
+<em class="property">static </em><code class="sig-name descname">handle_code</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">item</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>stencila.schema.types.CodeChunk<span class="p">, </span>stencila.schema.types.CodeExpression<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">compilation_result</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#pyla.interpreter.DocumentCompilationResult" title="pyla.interpreter.DocumentCompilationResult">pyla.interpreter.DocumentCompilationResult</a></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)">None</a><a class="reference internal" href="_modules/pyla/interpreter.html#DocumentCompiler.handle_code"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.interpreter.DocumentCompiler.handle_code" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse a CodeChunk or CodeExpression and add it to <code class="docutils literal notranslate"><span class="pre">compilation_result.code</span></code> list.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyla.interpreter.DocumentCompiler.traverse_dict">
+<code class="sig-name descname">traverse_dict</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">_dict</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.9)">dict</a></span></em>, <em class="sig-param"><span class="n">compilation_result</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#pyla.interpreter.DocumentCompilationResult" title="pyla.interpreter.DocumentCompilationResult">pyla.interpreter.DocumentCompilationResult</a></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)">None</a><a class="reference internal" href="_modules/pyla/interpreter.html#DocumentCompiler.traverse_dict"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.interpreter.DocumentCompiler.traverse_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Traverse into each item of a dict.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyla.interpreter.DocumentCompiler.traverse_list">
+<code class="sig-name descname">traverse_list</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">_list</span><span class="p">:</span> <span class="n">List</span></em>, <em class="sig-param"><span class="n">compilation_result</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#pyla.interpreter.DocumentCompilationResult" title="pyla.interpreter.DocumentCompilationResult">pyla.interpreter.DocumentCompilationResult</a></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)">None</a><a class="reference internal" href="_modules/pyla/interpreter.html#DocumentCompiler.traverse_list"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.interpreter.DocumentCompiler.traverse_list" title="Permalink to this definition">¶</a></dt>
+<dd><p>Traverse into each element in a list.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="pyla.interpreter.Interpreter">
+<em class="property">class </em><code class="sig-prename descclassname">pyla.interpreter.</code><code class="sig-name descname">Interpreter</code><a class="reference internal" href="_modules/pyla/interpreter.html#Interpreter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.interpreter.Interpreter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute a list of code blocks, maintaining its own <code class="docutils literal notranslate"><span class="pre">globals</span></code> scope for this execution run.</p>
+<dl class="py attribute">
+<dt id="pyla.interpreter.Interpreter.PROGRAMMING_LANGUAGES">
+<code class="sig-name descname">PROGRAMMING_LANGUAGES</code><em class="property"> = ['py', 'python']</em><a class="headerlink" href="#pyla.interpreter.Interpreter.PROGRAMMING_LANGUAGES" title="Permalink to this definition">¶</a></dt>
+<dd><p>JSON Schema specification of the types of nodes that this intertpreter’s
+<code class="docutils literal notranslate"><span class="pre">compile</span></code> and <code class="docutils literal notranslate"><span class="pre">execute</span></code> methods are capable of handling</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pyla.interpreter.Interpreter.CODE_CAPABILITIES">
+<code class="sig-name descname">CODE_CAPABILITIES</code><em class="property"> = {'properties': {'node': {'properties': {'programmingLanguage': {'enum': ['py', 'python']}, 'type': {'enum': ['CodeChunk', 'CodeExpression']}}, 'required': ['type', 'programmingLanguage'], 'type': 'object'}}, 'required': ['node'], 'type': 'object'}</em><a class="headerlink" href="#pyla.interpreter.Interpreter.CODE_CAPABILITIES" title="Permalink to this definition">¶</a></dt>
+<dd><p>The manifest of this interpreter’s capabilities and addresses.</p>
+<p>Conforms to Executa’s
+<a class="reference external" href="https://github.com/stencila/executa/blob/v1.4.0/src/base/Executor.ts#L63">Manifest</a>
+interface.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyla.interpreter.Interpreter.compile_code_chunk">
+<em class="property">static </em><code class="sig-name descname">compile_code_chunk</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">chunk</span><span class="p">:</span> <span class="n">stencila.schema.types.CodeChunk</span></em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span>pyla.parser.CodeChunkParseResult<span class="p">, </span>stencila.schema.types.CodeChunk<span class="p">]</span><a class="reference internal" href="_modules/pyla/interpreter.html#Interpreter.compile_code_chunk"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.interpreter.Interpreter.compile_code_chunk" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compile a <code class="docutils literal notranslate"><span class="pre">CodeChunk</span></code>.</p>
+<p>Returns a <code class="docutils literal notranslate"><span class="pre">CodeChunkParseResult</span></code> which is primarily needed for the AST, and the <code class="docutils literal notranslate"><span class="pre">CodeChunk</span></code> itself, which has
+its code metadata properties set.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyla.interpreter.Interpreter.compile">
+<em class="property">static </em><code class="sig-name descname">compile</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">node</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>stencila.schema.types.Entity<span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)">float</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)">None</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">, </span>List<span class="p">[</span>Any<span class="p">]</span><span class="p">, </span>Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>stencila.schema.types.Entity<span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)">float</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)">None</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">, </span>List<span class="p">[</span>Any<span class="p">]</span><span class="p">, </span>Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">, </span>Any<span class="p">]</span><span class="p">]</span><a class="reference internal" href="_modules/pyla/interpreter.html#Interpreter.compile"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.interpreter.Interpreter.compile" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compile a <code class="docutils literal notranslate"><span class="pre">CodeChunk</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyla.interpreter.Interpreter.execute">
+<code class="sig-name descname">execute</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">node</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>stencila.schema.types.Entity<span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)">float</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)">None</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">, </span>List<span class="p">[</span>Any<span class="p">]</span><span class="p">, </span>Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">parameter_values</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>stencila.schema.types.Entity<span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)">float</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)">None</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">, </span>List<span class="p">[</span>Any<span class="p">]</span><span class="p">, </span>Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">, </span>Any<span class="p">]</span><span class="p">]</span><a class="reference internal" href="_modules/pyla/interpreter.html#Interpreter.execute"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.interpreter.Interpreter.execute" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute a <code class="docutils literal notranslate"><span class="pre">CodeChunk</span></code> or <code class="docutils literal notranslate"><span class="pre">CodeExpression</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyla.interpreter.Interpreter.is_python_code">
+<em class="property">static </em><code class="sig-name descname">is_python_code</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">code</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>stencila.schema.types.CodeChunk<span class="p">, </span>stencila.schema.types.CodeExpression<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a><a class="reference internal" href="_modules/pyla/interpreter.html#Interpreter.is_python_code"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.interpreter.Interpreter.is_python_code" title="Permalink to this definition">¶</a></dt>
+<dd><p>Is a <code class="docutils literal notranslate"><span class="pre">CodeChunk</span></code> or <code class="docutils literal notranslate"><span class="pre">CodeExpression</span></code> Python code?</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyla.interpreter.Interpreter.execute_code_expression">
+<code class="sig-name descname">execute_code_expression</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">expression</span><span class="p">:</span> <span class="n">stencila.schema.types.CodeExpression</span></em>, <em class="sig-param"><span class="n">_locals</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; stencila.schema.types.CodeExpression<a class="reference internal" href="_modules/pyla/interpreter.html#Interpreter.execute_code_expression"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.interpreter.Interpreter.execute_code_expression" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluate <code class="docutils literal notranslate"><span class="pre">CodeExpression.text</span></code>, and get the result. Catch any exception the occurs.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyla.interpreter.Interpreter.execute_code_chunk">
+<code class="sig-name descname">execute_code_chunk</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">chunk_execution</span><span class="p">:</span> <span class="n">pyla.parser.CodeChunkExecution</span></em>, <em class="sig-param"><span class="n">_locals</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">, </span>Any<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; stencila.schema.types.CodeChunk<a class="reference internal" href="_modules/pyla/interpreter.html#Interpreter.execute_code_chunk"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.interpreter.Interpreter.execute_code_chunk" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute a <code class="docutils literal notranslate"><span class="pre">CodeChunk</span></code> that has been parsed and stored in a <code class="docutils literal notranslate"><span class="pre">CodeChunkExecution</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyla.interpreter.Interpreter.execute_statement">
+<code class="sig-name descname">execute_statement</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">statement</span><span class="p">:</span> <span class="n">_ast.stmt</span></em>, <em class="sig-param"><span class="n">chunk</span><span class="p">:</span> <span class="n">stencila.schema.types.CodeChunk</span></em>, <em class="sig-param"><span class="n">_locals</span><span class="p">:</span> <span class="n">Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">, </span>Any<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">cc_outputs</span><span class="p">:</span> <span class="n">List<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">duration</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)">float</a></span></em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)">float</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a><span class="p">]</span><a class="reference internal" href="_modules/pyla/interpreter.html#Interpreter.execute_statement"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.interpreter.Interpreter.execute_statement" title="Permalink to this definition">¶</a></dt>
+<dd><p>Execute a single AST statement.</p>
+<p>The statement will be executed with <code class="docutils literal notranslate"><span class="pre">eval</span></code> or <code class="docutils literal notranslate"><span class="pre">exec</span></code> depending on its type (see <code class="docutils literal notranslate"><span class="pre">parse_statement_runtime</span></code>).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyla.interpreter.Interpreter.add_output">
+<code class="sig-name descname">add_output</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cc_outputs</span><span class="p">:</span> <span class="n">List<span class="p">[</span>Any<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">result</span><span class="p">:</span> <span class="n">Any</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)">None</a><a class="reference internal" href="_modules/pyla/interpreter.html#Interpreter.add_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.interpreter.Interpreter.add_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add an output to cc_outputs.</p>
+<p>Should be inside <code class="docutils literal notranslate"><span class="pre">execute_statement</span></code> as it’s only used there, but pylint complains about too many local
+variables.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyla.interpreter.Interpreter.parse_statement_runtime">
+<em class="property">static </em><code class="sig-name descname">parse_statement_runtime</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">statement</span><span class="p">:</span> <span class="n">_ast.stmt</span></em><span class="sig-paren">)</span> &#x2192; Tuple<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">, </span>Callable<span class="p">]</span><a class="reference internal" href="_modules/pyla/interpreter.html#Interpreter.parse_statement_runtime"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.interpreter.Interpreter.parse_statement_runtime" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine the information to execute a statement.</p>
+<p>Returns the function with which to execute a statement (<code class="docutils literal notranslate"><span class="pre">eval</span></code> or <code class="docutils literal notranslate"><span class="pre">exec</span></code>), whether its output should be captured
+or not, and the compiled code to execute.</p>
+<p>See the other comments below on how/why these functions are chosen.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyla.interpreter.Interpreter.value_is_mpl">
+<em class="property">static </em><code class="sig-name descname">value_is_mpl</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span><span class="p">:</span> <span class="n">Any</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a><a class="reference internal" href="_modules/pyla/interpreter.html#Interpreter.value_is_mpl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.interpreter.Interpreter.value_is_mpl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Basic type checking to determine if a variable is a matplotlib figure.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyla.interpreter.Interpreter.decode_mpl">
+<em class="property">static </em><code class="sig-name descname">decode_mpl</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; stencila.schema.types.ImageObject<a class="reference internal" href="_modules/pyla/interpreter.html#Interpreter.decode_mpl"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.interpreter.Interpreter.decode_mpl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decode a matplotlib <code class="docutils literal notranslate"><span class="pre">MPLFigure</span></code> or <code class="docutils literal notranslate"><span class="pre">MPLArtist</span></code> into an <code class="docutils literal notranslate"><span class="pre">ImageObject</span></code>.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">matplotlib.pyplot.savefig</span></code> function just saves the current MPL figure that’s in the context.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyla.interpreter.Interpreter.decode_dataframe">
+<em class="property">static </em><code class="sig-name descname">decode_dataframe</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data_frame</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#pyla.interpreter.DataFrame" title="pyla.interpreter.DataFrame">pyla.interpreter.DataFrame</a></span></em><span class="sig-paren">)</span> &#x2192; stencila.schema.types.Datatable<a class="reference internal" href="_modules/pyla/interpreter.html#Interpreter.decode_dataframe"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.interpreter.Interpreter.decode_dataframe" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decode a pandas <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code> into a <code class="docutils literal notranslate"><span class="pre">Datatable</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyla.interpreter.Interpreter.decode_output">
+<code class="sig-name descname">decode_output</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">output</span><span class="p">:</span> <span class="n">Any</span></em><span class="sig-paren">)</span> &#x2192; Any<a class="reference internal" href="_modules/pyla/interpreter.html#Interpreter.decode_output"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.interpreter.Interpreter.decode_output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check if the output is convertible from a special data type to a Stencila type.</p>
+<p>If not, just return the original object.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="pyla.interpreter.MLPArtist">
+<em class="property">class </em><code class="sig-prename descclassname">pyla.interpreter.</code><code class="sig-name descname">MLPArtist</code><a class="reference internal" href="_modules/pyla/interpreter.html#MLPArtist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.interpreter.MLPArtist" title="Permalink to this definition">¶</a></dt>
+<dd><p>A fake MLPArtist to prevent ReferenceErrors later.</p>
+</dd></dl>
+
+</section>
+<section id="module-pyla.servers">
+<span id="servers"></span><h2>Servers<a class="headerlink" href="#module-pyla.servers" title="Permalink to this headline">¶</a></h2>
+<p>Module for server classes.</p>
+<dl class="py function">
+<dt id="pyla.servers.rpc_json_object_encode">
+<code class="sig-prename descclassname">pyla.servers.</code><code class="sig-name descname">rpc_json_object_encode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">node</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>Entity<span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)">float</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)">None</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">, </span>List<span class="p">[</span>Any<span class="p">]</span><span class="p">, </span>Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.9)">dict</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">]</span><a class="reference internal" href="_modules/pyla/servers.html#rpc_json_object_encode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.servers.rpc_json_object_encode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Like <code class="docutils literal notranslate"><span class="pre">stencila.schema.json.object_encode</span></code> but with support for <code class="docutils literal notranslate"><span class="pre">JsonRpcError</span></code>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyla.servers.to_json">
+<code class="sig-prename descclassname">pyla.servers.</code><code class="sig-name descname">to_json</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">node</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>Entity<span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)">int</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.9)">float</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.9)">bool</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)">None</a><span class="p">, </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">, </span>List<span class="p">[</span>Any<span class="p">]</span><span class="p">, </span>Dict<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">, </span>Any<span class="p">]</span><span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><a class="reference internal" href="_modules/pyla/servers.html#to_json"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.servers.to_json" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert a node including <code class="docutils literal notranslate"><span class="pre">JsonRrpcError</span></code>s, to JSON.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyla.servers.data_to_bytes">
+<code class="sig-prename descclassname">pyla.servers.</code><code class="sig-name descname">data_to_bytes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span><span class="p">:</span> <span class="n">Any</span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.9)">bytes</a><a class="reference internal" href="_modules/pyla/servers.html#data_to_bytes"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.servers.data_to_bytes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convert <code class="docutils literal notranslate"><span class="pre">data</span></code> to <code class="docutils literal notranslate"><span class="pre">bytes</span></code>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyla.servers.encode_int">
+<code class="sig-prename descclassname">pyla.servers.</code><code class="sig-name descname">encode_int</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">number</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)">int</a></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.9)">bytes</a><a class="reference internal" href="_modules/pyla/servers.html#encode_int"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.servers.encode_int" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pack <code class="docutils literal notranslate"><span class="pre">number</span></code> into varint bytes.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyla.servers.read_one">
+<code class="sig-prename descclassname">pyla.servers.</code><code class="sig-name descname">read_one</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">stream</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>BinaryIO<span class="p">, </span>socket.socket<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)">int</a><a class="reference internal" href="_modules/pyla/servers.html#read_one"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.servers.read_one" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a byte from a stream.</p>
+<p>Raises EOFError if the stream ends while reading bytes.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyla.servers.read_length_prefix">
+<code class="sig-prename descclassname">pyla.servers.</code><code class="sig-name descname">read_length_prefix</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">stream</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>BinaryIO<span class="p">, </span>socket.socket<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)">int</a><a class="reference internal" href="_modules/pyla/servers.html#read_length_prefix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.servers.read_length_prefix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a varint from stream.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyla.servers.get_stream_buffer">
+<code class="sig-prename descclassname">pyla.servers.</code><code class="sig-name descname">get_stream_buffer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">stream</span><span class="p">:</span> <span class="n">BinaryIO</span></em><span class="sig-paren">)</span> &#x2192; BinaryIO<a class="reference internal" href="_modules/pyla/servers.html#get_stream_buffer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.servers.get_stream_buffer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the buffer from a stream, if it exists.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyla.servers.io_read">
+<code class="sig-prename descclassname">pyla.servers.</code><code class="sig-name descname">io_read</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">stream</span><span class="p">:</span> <span class="n">BinaryIO</span></em>, <em class="sig-param"><span class="n">count</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)">int</a></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.9)">bytes</a><a class="reference internal" href="_modules/pyla/servers.html#io_read"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.servers.io_read" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read <code class="docutils literal notranslate"><span class="pre">count</span></code> bytes from stream or its underlying buffer (if it exists).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyla.servers.io_write">
+<code class="sig-prename descclassname">pyla.servers.</code><code class="sig-name descname">io_write</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">stream</span><span class="p">:</span> <span class="n">BinaryIO</span></em>, <em class="sig-param"><span class="n">message</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.9)">bytes</a></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)">None</a><a class="reference internal" href="_modules/pyla/servers.html#io_write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.servers.io_write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write to a stream or its underlying buffer (if it exists).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyla.servers.stream_read">
+<code class="sig-prename descclassname">pyla.servers.</code><code class="sig-name descname">stream_read</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">stream</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>BinaryIO<span class="p">, </span>socket.socket<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">count</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.9)">int</a></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.9)">bytes</a><a class="reference internal" href="_modules/pyla/servers.html#stream_read"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.servers.stream_read" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abstract reading from stream to work with IO (buffered/unbuffered) and sockets.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyla.servers.stream_write">
+<code class="sig-prename descclassname">pyla.servers.</code><code class="sig-name descname">stream_write</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">stream</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>BinaryIO<span class="p">, </span>socket.socket<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">message</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.9)">bytes</a></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)">None</a><a class="reference internal" href="_modules/pyla/servers.html#stream_write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.servers.stream_write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abstract writing to stream to work with IO (buffered/unbuffered) and sockets.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyla.servers.message_read">
+<code class="sig-prename descclassname">pyla.servers.</code><code class="sig-name descname">message_read</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">stream</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>BinaryIO<span class="p">, </span>socket.socket<span class="p">]</span></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><a class="reference internal" href="_modules/pyla/servers.html#message_read"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.servers.message_read" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a length-prefixed message from the stream.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyla.servers.message_write">
+<code class="sig-prename descclassname">pyla.servers.</code><code class="sig-name descname">message_write</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">stream</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>BinaryIO<span class="p">, </span>socket.socket<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">message</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)">None</a><a class="reference internal" href="_modules/pyla/servers.html#message_write"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.servers.message_write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a length-prefixed message to the stream.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt id="pyla.servers.JsonRpcErrorCode">
+<em class="property">class </em><code class="sig-prename descclassname">pyla.servers.</code><code class="sig-name descname">JsonRpcErrorCode</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyla/servers.html#JsonRpcErrorCode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.servers.JsonRpcErrorCode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Error codes defined in JSON-RPC 2.0</p>
+<p>Codes -32000 to -32099      are reserved for implementation-defined server-errors.</p>
+<p>Python implementation of Executa’s
+<a class="reference external" href="https://github.com/stencila/executa/blob/v1.0.0/src/base/JsonRpcError.ts#L14">JsonRpcErrorCode</a>.</p>
+<dl class="py attribute">
+<dt id="pyla.servers.JsonRpcErrorCode.ParseError">
+<code class="sig-name descname">ParseError</code><em class="property"> = -32700</em><a class="headerlink" href="#pyla.servers.JsonRpcErrorCode.ParseError" title="Permalink to this definition">¶</a></dt>
+<dd><p>The JSON sent is not a valid Request object.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pyla.servers.JsonRpcErrorCode.InvalidRequest">
+<code class="sig-name descname">InvalidRequest</code><em class="property"> = -32600</em><a class="headerlink" href="#pyla.servers.JsonRpcErrorCode.InvalidRequest" title="Permalink to this definition">¶</a></dt>
+<dd><p>The method does not exist / is not available.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pyla.servers.JsonRpcErrorCode.MethodNotFound">
+<code class="sig-name descname">MethodNotFound</code><em class="property"> = -32601</em><a class="headerlink" href="#pyla.servers.JsonRpcErrorCode.MethodNotFound" title="Permalink to this definition">¶</a></dt>
+<dd><p>Invalid method parameter(s).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pyla.servers.JsonRpcErrorCode.InvalidParams">
+<code class="sig-name descname">InvalidParams</code><em class="property"> = -32602</em><a class="headerlink" href="#pyla.servers.JsonRpcErrorCode.InvalidParams" title="Permalink to this definition">¶</a></dt>
+<dd><p>Internal JSON-RPC error.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pyla.servers.JsonRpcErrorCode.InternalError">
+<code class="sig-name descname">InternalError</code><em class="property"> = -32603</em><a class="headerlink" href="#pyla.servers.JsonRpcErrorCode.InternalError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generic server error.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="pyla.servers.JsonRpcErrorCode.ServerError">
+<code class="sig-name descname">ServerError</code><em class="property"> = -32000</em><a class="headerlink" href="#pyla.servers.JsonRpcErrorCode.ServerError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Capability error.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt id="pyla.servers.JsonRpcError">
+<em class="property">exception </em><code class="sig-prename descclassname">pyla.servers.</code><code class="sig-name descname">JsonRpcError</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">code</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#pyla.servers.JsonRpcErrorCode" title="pyla.servers.JsonRpcErrorCode">pyla.servers.JsonRpcErrorCode</a></span></em>, <em class="sig-param"><span class="n">message</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></span></em>, <em class="sig-param"><span class="n">data</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Any<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyla/servers.html#JsonRpcError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.servers.JsonRpcError" title="Permalink to this definition">¶</a></dt>
+<dd><p>A JSON-RPC error that may be part of a response</p>
+<p>Python implementation of Executa’s
+<a class="reference external" href="https://github.com/stencila/executa/blob/v1.0.0/src/base/JsonRpcError.ts">JsonRpcError</a>.</p>
+<dl class="py attribute">
+<dt id="pyla.servers.JsonRpcError.code">
+<code class="sig-name descname">code</code><em class="property">: <a class="reference internal" href="#pyla.servers.JsonRpcErrorCode" title="pyla.servers.JsonRpcErrorCode">pyla.servers.JsonRpcErrorCode</a></em><a class="headerlink" href="#pyla.servers.JsonRpcError.code" title="Permalink to this definition">¶</a></dt>
+<dd><p>A primitive or structured value that contains additional information about the error.
+This may be omitted.
+The value of this member is defined by the server (e.g. detailed error information,
+nested errors etc.).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="pyla.servers.StreamServer">
+<em class="property">class </em><code class="sig-prename descclassname">pyla.servers.</code><code class="sig-name descname">StreamServer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">interpreter</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#pyla.interpreter.Interpreter" title="pyla.interpreter.Interpreter">pyla.interpreter.Interpreter</a></span></em>, <em class="sig-param"><span class="n">input_stream</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>BinaryIO<span class="p">, </span>socket.socket<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">output_stream</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>BinaryIO<span class="p">, </span>socket.socket<span class="p">]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyla/servers.html#StreamServer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.servers.StreamServer" title="Permalink to this definition">¶</a></dt>
+<dd><p>A server that communicates using length-prefixed JSON-RPC messages over streams or sockets.</p>
+<p>Python implementation of Executa’s
+<a class="reference external" href="https://github.com/stencila/executa/blob/v1.0.0/src/stdio/StreamServer.ts#L10">StreamServer</a></p>
+<dl class="py method">
+<dt id="pyla.servers.StreamServer.read_message">
+<code class="sig-name descname">read_message</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Iterable<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">]</span><a class="reference internal" href="_modules/pyla/servers.html#StreamServer.read_message"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.servers.StreamServer.read_message" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a length-prefixed message from the input stream then repeat.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyla.servers.StreamServer.write_message">
+<code class="sig-name descname">write_message</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">message</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)">None</a><a class="reference internal" href="_modules/pyla/servers.html#StreamServer.write_message"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.servers.StreamServer.write_message" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a length-prefixed message to the output stream.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyla.servers.StreamServer.receive_message">
+<code class="sig-name descname">receive_message</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">message</span><span class="p">:</span> <span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a></span></em><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><a class="reference internal" href="_modules/pyla/servers.html#StreamServer.receive_message"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.servers.StreamServer.receive_message" title="Permalink to this definition">¶</a></dt>
+<dd><p>Receive a JSON-RPC request and send back a JSON-RPC response.</p>
+<p>The response may have a JSON-RPC <code class="docutils literal notranslate"><span class="pre">error</span></code> if the request was bad.</p>
+<p>Python implementation of Executa’s
+<a class="reference external" href="https://github.com/stencila/executa/blob/v1.0.1/src/base/Server.ts#L61">Server.receive</a>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyla.servers.StreamServer.start">
+<code class="sig-name descname">start</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)">None</a><a class="reference internal" href="_modules/pyla/servers.html#StreamServer.start"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.servers.StreamServer.start" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run the server in a loop forever.</p>
+<p>This will run forever because the <code class="docutils literal notranslate"><span class="pre">read_message</span></code> generator never finishes.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="pyla.servers.StdioServer">
+<em class="property">class </em><code class="sig-prename descclassname">pyla.servers.</code><code class="sig-name descname">StdioServer</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">interpreter</span><span class="p">:</span> <span class="n"><a class="reference internal" href="#pyla.interpreter.Interpreter" title="pyla.interpreter.Interpreter">pyla.interpreter.Interpreter</a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyla/servers.html#StdioServer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.servers.StdioServer" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <code class="docutils literal notranslate"><span class="pre">StreamServer</span></code> that uses <code class="docutils literal notranslate"><span class="pre">stdio</span></code> as the transport.</p>
+<p>Python implementation of Executa’s
+<a class="reference external" href="https://github.com/stencila/executa/blob/v1.0.0/src/stdio/StdioServer.ts#L12">StdioServer</a></p>
+</dd></dl>
+
+</section>
+<section id="module-pyla.system">
+<span id="system"></span><h2>System<a class="headerlink" href="#module-pyla.system" title="Permalink to this headline">¶</a></h2>
+<p>Functions for system-related tasks (currently just registering/deregistering the executor manifest).</p>
+<dl class="py class">
+<dt id="pyla.system.ManifestManager">
+<em class="property">class </em><code class="sig-prename descclassname">pyla.system.</code><code class="sig-name descname">ManifestManager</code><a class="reference internal" href="_modules/pyla/system.html#ManifestManager"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.system.ManifestManager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Register or deregister a manifest file.</p>
+<dl class="py method">
+<dt id="pyla.system.ManifestManager.get_home_dir">
+<em class="property">static </em><code class="sig-name descname">get_home_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; Optional<span class="p">[</span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><span class="p">]</span><a class="reference internal" href="_modules/pyla/system.html#ManifestManager.get_home_dir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.system.ManifestManager.get_home_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the “home” directory of the current user, (or <code class="docutils literal notranslate"><span class="pre">APPDATA</span></code> dir on windows).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyla.system.ManifestManager.user_dir">
+<code class="sig-name descname">user_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><a class="reference internal" href="_modules/pyla/system.html#ManifestManager.user_dir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.system.ManifestManager.user_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the current user’s Stencila data directory.</p>
+<p>This is the directory that Stencila configuration settings, such as the installed Stencila hosts, and document
+buffers get stored.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyla.system.ManifestManager.manifest_dir">
+<code class="sig-name descname">manifest_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><a class="reference internal" href="_modules/pyla/system.html#ManifestManager.manifest_dir"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.system.ManifestManager.manifest_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the directory in which execution registration manifests are stored.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyla.system.ManifestManager.manifest_path">
+<code class="sig-name descname">manifest_path</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.9)">str</a><a class="reference internal" href="_modules/pyla/system.html#ManifestManager.manifest_path"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.system.ManifestManager.manifest_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the path the the execution registration manifest for this type of executor (Python).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyla.system.ManifestManager.register">
+<code class="sig-name descname">register</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)">None</a><a class="reference internal" href="_modules/pyla/system.html#ManifestManager.register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.system.ManifestManager.register" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write the registration manifest (<code class="docutils literal notranslate"><span class="pre">MANIFEST</span></code>) to the manifest path.</p>
+<p>The command path (i.e. path to python) is set to the currently executing python binary, before right. This is to
+provide compatibility with virtual environments. The means that if you re-run the register command with
+different python binaries a different manifest will be written out.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="pyla.system.ManifestManager.deregister">
+<code class="sig-name descname">deregister</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)">None</a><a class="reference internal" href="_modules/pyla/system.html#ManifestManager.deregister"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.system.ManifestManager.deregister" title="Permalink to this definition">¶</a></dt>
+<dd><p>Remove the manifest file created with <code class="docutils literal notranslate"><span class="pre">register</span></code>.</p>
+<p>Does not fail if the manifest file does not exist.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyla.system.register">
+<code class="sig-prename descclassname">pyla.system.</code><code class="sig-name descname">register</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)">None</a><a class="reference internal" href="_modules/pyla/system.html#register"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.system.register" title="Permalink to this definition">¶</a></dt>
+<dd><p>Register the <code class="docutils literal notranslate"><span class="pre">MANIFEST</span></code> as defined by <code class="docutils literal notranslate"><span class="pre">EXECUTORS_DIR_NAME</span></code> and <code class="docutils literal notranslate"><span class="pre">MANIFEST_FILE_NAME</span></code>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="pyla.system.deregister">
+<code class="sig-prename descclassname">pyla.system.</code><code class="sig-name descname">deregister</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.9)">None</a><a class="reference internal" href="_modules/pyla/system.html#deregister"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#pyla.system.deregister" title="Permalink to this definition">¶</a></dt>
+<dd><p>Deregister the <code class="docutils literal notranslate"><span class="pre">MANIFEST</span></code> as defined by <code class="docutils literal notranslate"><span class="pre">EXECUTORS_DIR_NAME</span></code> and <code class="docutils literal notranslate"><span class="pre">MANIFEST_FILE_NAME</span></code>.</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">pyla</a></h1>
+
+
+
+<p class="blurb">Python interpreter for executable documents</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=stencila&repo=pyla&type=mark&count=True&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#parser">Parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-pyla.interpreter">Interpreter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-pyla.servers">Servers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-pyla.system">System</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">🐍 Pyla</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Stencila and contributors.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.4.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

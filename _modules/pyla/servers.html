@@ -1,0 +1,443 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pyla.servers &#8212; pyla  documentation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for pyla.servers</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module for server classes.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">enum</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">typing</span>
+<span class="kn">from</span> <span class="nn">socket</span> <span class="kn">import</span> <span class="n">socket</span>
+
+<span class="kn">from</span> <span class="nn">stencila.schema.json</span> <span class="kn">import</span> <span class="n">dict_decode</span><span class="p">,</span> <span class="n">object_encode</span>
+<span class="kn">from</span> <span class="nn">stencila.schema.types</span> <span class="kn">import</span> <span class="n">Node</span>
+
+<span class="kn">from</span> <span class="nn">.errors</span> <span class="kn">import</span> <span class="n">CapabilityError</span>
+<span class="kn">from</span> <span class="nn">.interpreter</span> <span class="kn">import</span> <span class="n">Interpreter</span>
+
+<span class="n">StreamType</span> <span class="o">=</span> <span class="n">typing</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="n">typing</span><span class="o">.</span><span class="n">BinaryIO</span><span class="p">,</span> <span class="n">socket</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="rpc_json_object_encode"><a class="viewcode-back" href="../../api.html#pyla.servers.rpc_json_object_encode">[docs]</a><span class="k">def</span> <span class="nf">rpc_json_object_encode</span><span class="p">(</span><span class="n">node</span><span class="p">:</span> <span class="n">Node</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">typing</span><span class="o">.</span><span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Like `stencila.schema.json.object_encode` but with support for `JsonRpcError`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">JsonRpcError</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;code&quot;</span><span class="p">:</span> <span class="n">node</span><span class="o">.</span><span class="n">code</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">node</span><span class="p">),</span> <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">node</span><span class="o">.</span><span class="n">data</span><span class="p">}</span>
+
+    <span class="k">return</span> <span class="n">object_encode</span><span class="p">(</span><span class="n">node</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="to_json"><a class="viewcode-back" href="../../api.html#pyla.servers.to_json">[docs]</a><span class="k">def</span> <span class="nf">to_json</span><span class="p">(</span><span class="n">node</span><span class="p">:</span> <span class="n">Node</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert a node including `JsonRrpcError`s, to JSON.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="n">rpc_json_object_encode</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="data_to_bytes"><a class="viewcode-back" href="../../api.html#pyla.servers.data_to_bytes">[docs]</a><span class="k">def</span> <span class="nf">data_to_bytes</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert `data` to `bytes`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="nb">bytes</span><span class="p">((</span><span class="n">data</span><span class="p">,))</span></div>
+
+
+<div class="viewcode-block" id="encode_int"><a class="viewcode-back" href="../../api.html#pyla.servers.encode_int">[docs]</a><span class="k">def</span> <span class="nf">encode_int</span><span class="p">(</span><span class="n">number</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Pack `number` into varint bytes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">buf</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;&quot;</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">to_write</span> <span class="o">=</span> <span class="n">number</span> <span class="o">&amp;</span> <span class="mh">0x7F</span>
+        <span class="n">number</span> <span class="o">&gt;&gt;=</span> <span class="mi">7</span>
+        <span class="k">if</span> <span class="n">number</span><span class="p">:</span>
+            <span class="n">buf</span> <span class="o">+=</span> <span class="n">data_to_bytes</span><span class="p">(</span><span class="n">to_write</span> <span class="o">|</span> <span class="mh">0x80</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">buf</span> <span class="o">+=</span> <span class="n">data_to_bytes</span><span class="p">(</span><span class="n">to_write</span><span class="p">)</span>
+            <span class="k">break</span>
+    <span class="k">return</span> <span class="n">buf</span></div>
+
+
+<div class="viewcode-block" id="read_one"><a class="viewcode-back" href="../../api.html#pyla.servers.read_one">[docs]</a><span class="k">def</span> <span class="nf">read_one</span><span class="p">(</span><span class="n">stream</span><span class="p">:</span> <span class="n">StreamType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read a byte from a stream.</span>
+
+<span class="sd">    Raises EOFError if the stream ends while reading bytes.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">char</span> <span class="o">=</span> <span class="n">stream_read</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">char</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">EOFError</span><span class="p">(</span><span class="s2">&quot;Unexpected EOF while reading bytes&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">ord</span><span class="p">(</span><span class="n">char</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="read_length_prefix"><a class="viewcode-back" href="../../api.html#pyla.servers.read_length_prefix">[docs]</a><span class="k">def</span> <span class="nf">read_length_prefix</span><span class="p">(</span><span class="n">stream</span><span class="p">:</span> <span class="n">StreamType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read a varint from stream.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">shift</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">read_one</span><span class="p">(</span><span class="n">stream</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">|=</span> <span class="p">(</span><span class="n">i</span> <span class="o">&amp;</span> <span class="mh">0x7F</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="n">shift</span>
+        <span class="n">shift</span> <span class="o">+=</span> <span class="mi">7</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">i</span> <span class="o">&amp;</span> <span class="mh">0x80</span><span class="p">:</span>
+            <span class="k">break</span>
+
+    <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="get_stream_buffer"><a class="viewcode-back" href="../../api.html#pyla.servers.get_stream_buffer">[docs]</a><span class="k">def</span> <span class="nf">get_stream_buffer</span><span class="p">(</span><span class="n">stream</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">BinaryIO</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">typing</span><span class="o">.</span><span class="n">BinaryIO</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the buffer from a stream, if it exists.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">buffer</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="s2">&quot;buffer&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">buffer</span> <span class="k">if</span> <span class="n">buffer</span> <span class="k">else</span> <span class="n">stream</span></div>
+
+
+<div class="viewcode-block" id="io_read"><a class="viewcode-back" href="../../api.html#pyla.servers.io_read">[docs]</a><span class="k">def</span> <span class="nf">io_read</span><span class="p">(</span><span class="n">stream</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">BinaryIO</span><span class="p">,</span> <span class="n">count</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read `count` bytes from stream or its underlying buffer (if it exists).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">get_stream_buffer</span><span class="p">(</span><span class="n">stream</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">count</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="io_write"><a class="viewcode-back" href="../../api.html#pyla.servers.io_write">[docs]</a><span class="k">def</span> <span class="nf">io_write</span><span class="p">(</span><span class="n">stream</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">BinaryIO</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Write to a stream or its underlying buffer (if it exists).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">stream</span> <span class="o">=</span> <span class="n">get_stream_buffer</span><span class="p">(</span><span class="n">stream</span><span class="p">)</span>
+    <span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+    <span class="n">stream</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="stream_read"><a class="viewcode-back" href="../../api.html#pyla.servers.stream_read">[docs]</a><span class="k">def</span> <span class="nf">stream_read</span><span class="p">(</span><span class="n">stream</span><span class="p">:</span> <span class="n">StreamType</span><span class="p">,</span> <span class="n">count</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Abstract reading from stream to work with IO (buffered/unbuffered) and sockets.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">socket</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">stream</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="n">count</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">io_read</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">count</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="stream_write"><a class="viewcode-back" href="../../api.html#pyla.servers.stream_write">[docs]</a><span class="k">def</span> <span class="nf">stream_write</span><span class="p">(</span><span class="n">stream</span><span class="p">:</span> <span class="n">StreamType</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Abstract writing to stream to work with IO (buffered/unbuffered) and sockets.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">socket</span><span class="p">):</span>
+        <span class="n">stream</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">io_write</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="message_read"><a class="viewcode-back" href="../../api.html#pyla.servers.message_read">[docs]</a><span class="k">def</span> <span class="nf">message_read</span><span class="p">(</span><span class="n">stream</span><span class="p">:</span> <span class="n">StreamType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read a length-prefixed message from the stream.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">message_len</span> <span class="o">=</span> <span class="n">read_length_prefix</span><span class="p">(</span><span class="n">stream</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">stream_read</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">message_len</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf8&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="message_write"><a class="viewcode-back" href="../../api.html#pyla.servers.message_write">[docs]</a><span class="k">def</span> <span class="nf">message_write</span><span class="p">(</span><span class="n">stream</span><span class="p">:</span> <span class="n">StreamType</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Write a length-prefixed message to the stream.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">bites</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf8&quot;</span><span class="p">)</span>
+    <span class="n">stream_write</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">encode_int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">bites</span><span class="p">)))</span>
+    <span class="n">stream_write</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">bites</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="JsonRpcErrorCode"><a class="viewcode-back" href="../../api.html#pyla.servers.JsonRpcErrorCode">[docs]</a><span class="k">class</span> <span class="nc">JsonRpcErrorCode</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Error codes defined in JSON-RPC 2.0</span>
+
+<span class="sd">    Codes -32000 to -32099	are reserved for implementation-defined server-errors.</span>
+
+<span class="sd">    Python implementation of Executa&#39;s</span>
+<span class="sd">    [JsonRpcErrorCode](https://github.com/stencila/executa/blob/v1.0.0/src/base/JsonRpcError.ts#L14).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Invalid JSON was received by the server.</span>
+<span class="sd">    An error occurred on the server while parsing the JSON text.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ParseError</span> <span class="o">=</span> <span class="o">-</span><span class="mi">32700</span>
+
+    <span class="sd">&quot;&quot;&quot;The JSON sent is not a valid Request object.&quot;&quot;&quot;</span>
+    <span class="n">InvalidRequest</span> <span class="o">=</span> <span class="o">-</span><span class="mi">32600</span>
+
+    <span class="sd">&quot;&quot;&quot;The method does not exist / is not available.&quot;&quot;&quot;</span>
+    <span class="n">MethodNotFound</span> <span class="o">=</span> <span class="o">-</span><span class="mi">32601</span>
+
+    <span class="sd">&quot;&quot;&quot;Invalid method parameter(s).&quot;&quot;&quot;</span>
+    <span class="n">InvalidParams</span> <span class="o">=</span> <span class="o">-</span><span class="mi">32602</span>
+
+    <span class="sd">&quot;&quot;&quot;Internal JSON-RPC error.&quot;&quot;&quot;</span>
+    <span class="n">InternalError</span> <span class="o">=</span> <span class="o">-</span><span class="mi">32603</span>
+
+    <span class="sd">&quot;&quot;&quot;Generic server error.&quot;&quot;&quot;</span>
+    <span class="n">ServerError</span> <span class="o">=</span> <span class="o">-</span><span class="mi">32000</span>
+
+    <span class="sd">&quot;&quot;&quot;Capability error.&quot;&quot;&quot;</span>
+    <span class="n">CapabilityError</span> <span class="o">=</span> <span class="o">-</span><span class="mi">32005</span></div>
+
+
+<div class="viewcode-block" id="JsonRpcError"><a class="viewcode-back" href="../../api.html#pyla.servers.JsonRpcError">[docs]</a><span class="k">class</span> <span class="nc">JsonRpcError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A JSON-RPC error that may be part of a response</span>
+
+<span class="sd">    Python implementation of Executa&#39;s</span>
+<span class="sd">    [JsonRpcError](https://github.com/stencila/executa/blob/v1.0.0/src/base/JsonRpcError.ts).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A number that indicates the error type that occurred.</span>
+<span class="sd">    This MUST be an integer.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">code</span><span class="p">:</span> <span class="n">JsonRpcErrorCode</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A primitive or structured value that contains additional information about the error.</span>
+<span class="sd">    This may be omitted.</span>
+<span class="sd">    The value of this member is defined by the server (e.g. detailed error information,</span>
+<span class="sd">    nested errors etc.).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Any</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">code</span><span class="p">:</span> <span class="n">JsonRpcErrorCode</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">code</span> <span class="o">=</span> <span class="n">code</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="n">data</span></div>
+
+
+<div class="viewcode-block" id="StreamServer"><a class="viewcode-back" href="../../api.html#pyla.servers.StreamServer">[docs]</a><span class="k">class</span> <span class="nc">StreamServer</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A server that communicates using length-prefixed JSON-RPC messages over streams or sockets.</span>
+
+<span class="sd">    Python implementation of Executa&#39;s</span>
+<span class="sd">    [StreamServer](https://github.com/stencila/executa/blob/v1.0.0/src/stdio/StreamServer.ts#L10)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">interpreter</span><span class="p">:</span> <span class="n">Interpreter</span>
+    <span class="n">input_stream</span><span class="p">:</span> <span class="n">StreamType</span>
+    <span class="n">output_stream</span><span class="p">:</span> <span class="n">StreamType</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">interpreter</span><span class="p">:</span> <span class="n">Interpreter</span><span class="p">,</span>
+        <span class="n">input_stream</span><span class="p">:</span> <span class="n">StreamType</span><span class="p">,</span>
+        <span class="n">output_stream</span><span class="p">:</span> <span class="n">StreamType</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interpreter</span> <span class="o">=</span> <span class="n">interpreter</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_stream</span> <span class="o">=</span> <span class="n">input_stream</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_stream</span> <span class="o">=</span> <span class="n">output_stream</span>
+
+<div class="viewcode-block" id="StreamServer.read_message"><a class="viewcode-back" href="../../api.html#pyla.servers.StreamServer.read_message">[docs]</a>    <span class="k">def</span> <span class="nf">read_message</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">typing</span><span class="o">.</span><span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Read a length-prefixed message from the input stream then repeat.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">message_read</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_stream</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="StreamServer.write_message"><a class="viewcode-back" href="../../api.html#pyla.servers.StreamServer.write_message">[docs]</a>    <span class="k">def</span> <span class="nf">write_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write a length-prefixed message to the output stream.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">message_write</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_stream</span><span class="p">,</span> <span class="n">message</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="StreamServer.receive_message"><a class="viewcode-back" href="../../api.html#pyla.servers.StreamServer.receive_message">[docs]</a>    <span class="k">def</span> <span class="nf">receive_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Receive a JSON-RPC request and send back a JSON-RPC response.</span>
+
+<span class="sd">        The response may have a JSON-RPC `error` if the request was bad.</span>
+
+<span class="sd">        Python implementation of Executa&#39;s</span>
+<span class="sd">        [Server.receive](https://github.com/stencila/executa/blob/v1.0.1/src/base/Server.ts#L61).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">request_id</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">error</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">request</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">JsonRpcError</span><span class="p">(</span>
+                    <span class="n">JsonRpcErrorCode</span><span class="o">.</span><span class="n">ParseError</span><span class="p">,</span> <span class="s2">&quot;Parse error: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+                <span class="p">)</span> <span class="kn">from</span> <span class="nn">exc</span>
+
+            <span class="n">request_id</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;id&quot;</span><span class="p">)</span>
+            <span class="n">method</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;method&quot;</span><span class="p">)</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;params&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;manifest&quot;</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="n">Interpreter</span><span class="o">.</span><span class="n">MANIFEST</span>
+            <span class="k">elif</span> <span class="n">method</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;compile&quot;</span><span class="p">,</span> <span class="s2">&quot;execute&quot;</span><span class="p">):</span>
+                <span class="n">node</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;node&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">node</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">JsonRpcError</span><span class="p">(</span>
+                        <span class="n">JsonRpcErrorCode</span><span class="o">.</span><span class="n">InvalidParams</span><span class="p">,</span>
+                        <span class="s1">&#39;Invalid params: &quot;node&quot; is missing&#39;</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="n">node</span> <span class="o">=</span> <span class="n">dict_decode</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">interpreter</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;compile&quot;</span>
+                    <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">interpreter</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">JsonRpcError</span><span class="p">(</span>
+                    <span class="n">JsonRpcErrorCode</span><span class="o">.</span><span class="n">MethodNotFound</span><span class="p">,</span>
+                    <span class="s2">&quot;Method not found: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">method</span><span class="p">),</span>
+                <span class="p">)</span>
+        <span class="k">except</span> <span class="n">JsonRpcError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="n">exc</span>
+        <span class="k">except</span> <span class="n">CapabilityError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="n">JsonRpcError</span><span class="p">(</span>
+                <span class="n">JsonRpcErrorCode</span><span class="o">.</span><span class="n">CapabilityError</span><span class="p">,</span> <span class="s2">&quot;Capability error: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>  <span class="c1"># pylint: disable=broad-except</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="n">JsonRpcError</span><span class="p">(</span>
+                <span class="n">JsonRpcErrorCode</span><span class="o">.</span><span class="n">ServerError</span><span class="p">,</span> <span class="s2">&quot;Internal error: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="n">response</span><span class="p">:</span> <span class="n">typing</span><span class="o">.</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">typing</span><span class="o">.</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;jsonrpc&quot;</span><span class="p">:</span> <span class="s2">&quot;2.0&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">request_id</span><span class="p">,</span>
+            <span class="s2">&quot;result&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">,</span>
+            <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">error</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">to_json</span><span class="p">(</span><span class="n">response</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="StreamServer.start"><a class="viewcode-back" href="../../api.html#pyla.servers.StreamServer.start">[docs]</a>    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Run the server in a loop forever.</span>
+
+<span class="sd">        This will run forever because the `read_message` generator never finishes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_message</span><span class="p">():</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">receive_message</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">write_message</span><span class="p">(</span><span class="n">response</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="StdioServer"><a class="viewcode-back" href="../../api.html#pyla.servers.StdioServer">[docs]</a><span class="k">class</span> <span class="nc">StdioServer</span><span class="p">(</span><span class="n">StreamServer</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A `StreamServer` that uses `stdio` as the transport.</span>
+
+<span class="sd">    Python implementation of Executa&#39;s</span>
+<span class="sd">    [StdioServer](https://github.com/stencila/executa/blob/v1.0.0/src/stdio/StdioServer.ts#L12)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interpreter</span><span class="p">:</span> <span class="n">Interpreter</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">interpreter</span><span class="p">,</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">buffer</span><span class="p">,</span> <span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">buffer</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">pyla</a></h1>
+
+
+
+<p class="blurb">Python interpreter for executable documents</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=stencila&repo=pyla&type=mark&count=True&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">API</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Stencila and contributors.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.4.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

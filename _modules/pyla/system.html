@@ -1,0 +1,222 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pyla.system &#8212; pyla  documentation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for pyla.system</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Functions for system-related tasks (currently just registering/deregistering the executor manifest).</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">typing</span>
+
+<span class="kn">from</span> <span class="nn">.interpreter</span> <span class="kn">import</span> <span class="n">Interpreter</span>
+
+<span class="n">LOGGER</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="n">LOGGER</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">NullHandler</span><span class="p">())</span>
+
+<span class="n">MANIFEST_FILE_NAME</span> <span class="o">=</span> <span class="s2">&quot;pyla.json&quot;</span>
+<span class="n">EXECUTORS_DIR_NAME</span> <span class="o">=</span> <span class="s2">&quot;executors&quot;</span>
+
+
+<div class="viewcode-block" id="ManifestManager"><a class="viewcode-back" href="../../api.html#pyla.system.ManifestManager">[docs]</a><span class="k">class</span> <span class="nc">ManifestManager</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Register or deregister a manifest file.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ManifestManager.get_home_dir"><a class="viewcode-back" href="../../api.html#pyla.system.ManifestManager.get_home_dir">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_home_dir</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">typing</span><span class="o">.</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the &quot;home&quot; directory of the current user, (or `APPDATA` dir on windows).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">os_name</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">os_name</span> <span class="o">==</span> <span class="s2">&quot;windows&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;APPDATA&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;HOME&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ManifestManager.user_dir"><a class="viewcode-back" href="../../api.html#pyla.system.ManifestManager.user_dir">[docs]</a>    <span class="k">def</span> <span class="nf">user_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the current user&#39;s Stencila data directory.</span>
+
+<span class="sd">        This is the directory that Stencila configuration settings, such as the installed Stencila hosts, and document</span>
+<span class="sd">        buffers get stored.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">os_name</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="n">home_dir</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_home_dir</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">home_dir</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Could not determine home directory from environment.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">os_name</span> <span class="o">==</span> <span class="s2">&quot;darwin&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">home_dir</span><span class="p">,</span> <span class="s2">&quot;Library&quot;</span><span class="p">,</span> <span class="s2">&quot;Application Support&quot;</span><span class="p">,</span> <span class="s2">&quot;Stencila&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">os_name</span> <span class="o">==</span> <span class="s2">&quot;linux&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">home_dir</span><span class="p">,</span> <span class="s2">&quot;.stencila&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">os_name</span> <span class="o">==</span> <span class="s2">&quot;windows&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">home_dir</span><span class="p">,</span> <span class="s2">&quot;Stencila&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">home_dir</span><span class="p">,</span> <span class="s2">&quot;stencila&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ManifestManager.manifest_dir"><a class="viewcode-back" href="../../api.html#pyla.system.ManifestManager.manifest_dir">[docs]</a>    <span class="k">def</span> <span class="nf">manifest_dir</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the directory in which execution registration manifests are stored.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">user_dir</span><span class="p">(),</span> <span class="n">EXECUTORS_DIR_NAME</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ManifestManager.manifest_path"><a class="viewcode-back" href="../../api.html#pyla.system.ManifestManager.manifest_path">[docs]</a>    <span class="k">def</span> <span class="nf">manifest_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the path the the execution registration manifest for this type of executor (Python).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">manifest_dir</span><span class="p">(),</span> <span class="n">MANIFEST_FILE_NAME</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ManifestManager.register"><a class="viewcode-back" href="../../api.html#pyla.system.ManifestManager.register">[docs]</a>    <span class="k">def</span> <span class="nf">register</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Write the registration manifest (`MANIFEST`) to the manifest path.</span>
+
+<span class="sd">        The command path (i.e. path to python) is set to the currently executing python binary, before right. This is to</span>
+<span class="sd">        provide compatibility with virtual environments. The means that if you re-run the register command with</span>
+<span class="sd">        different python binaries a different manifest will be written out.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">manifest_dir</span><span class="p">(),</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">manifest_path</span><span class="p">(),</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">manifest_file</span><span class="p">:</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">Interpreter</span><span class="o">.</span><span class="n">MANIFEST</span><span class="p">,</span> <span class="n">manifest_file</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Manifest saved to &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">manifest_path</span><span class="p">())</span></div>
+
+<div class="viewcode-block" id="ManifestManager.deregister"><a class="viewcode-back" href="../../api.html#pyla.system.ManifestManager.deregister">[docs]</a>    <span class="k">def</span> <span class="nf">deregister</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Remove the manifest file created with `register`.</span>
+
+<span class="sd">        Does not fail if the manifest file does not exist.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">manifest_path</span><span class="p">()):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">unlink</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">manifest_path</span><span class="p">())</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Deleted manifest at path &#39;</span><span class="si">%s</span><span class="s2">&#39;&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">manifest_path</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Not deregistering as file &#39;</span><span class="si">%s</span><span class="s2">&#39; does not exist&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">manifest_path</span><span class="p">()</span>
+            <span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="register"><a class="viewcode-back" href="../../api.html#pyla.system.register">[docs]</a><span class="k">def</span> <span class="nf">register</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Register the `MANIFEST` as defined by `EXECUTORS_DIR_NAME` and `MANIFEST_FILE_NAME`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ManifestManager</span><span class="p">()</span><span class="o">.</span><span class="n">register</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="deregister"><a class="viewcode-back" href="../../api.html#pyla.system.deregister">[docs]</a><span class="k">def</span> <span class="nf">deregister</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Deregister the `MANIFEST` as defined by `EXECUTORS_DIR_NAME` and `MANIFEST_FILE_NAME`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ManifestManager</span><span class="p">()</span><span class="o">.</span><span class="n">deregister</span><span class="p">()</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">pyla</a></h1>
+
+
+
+<p class="blurb">Python interpreter for executable documents</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=stencila&repo=pyla&type=mark&count=True&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">API</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Stencila and contributors.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.4.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

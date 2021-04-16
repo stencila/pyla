@@ -1,0 +1,194 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
+    <title>🐍 Pyla &#8212; pyla  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API" href="api.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="pyla">
+<h1>🐍 Pyla<a class="headerlink" href="#pyla" title="Permalink to this headline">¶</a></h1>
+<section id="python-interpreter-for-executable-documents">
+<h2>Python interpreter for executable documents<a class="headerlink" href="#python-interpreter-for-executable-documents" title="Permalink to this headline">¶</a></h2>
+<a class="reference external image-reference" href="https://dev.azure.com/stencila/stencila/_build/latest?definitionId=3&amp;branchName=master"><img alt="Build Status" src="https://dev.azure.com/stencila/stencila/_apis/build/status/stencila.pyla?branchName=master" /></a>
+<a class="reference external image-reference" href="https://codecov.io/gh/stencila/pyla"><img alt="Code coverage" src="https://codecov.io/gh/stencila/pyla/branch/master/graph/badge.svg" /></a>
+<a class="reference external image-reference" href="https://github.com/psf/black"><img alt="Code style" src="https://img.shields.io/badge/code%20style-black-000000.svg" /></a>
+<a class="reference external image-reference" href="https://pypi.org/project/stencila-pyla"><img alt="PyPI" src="https://img.shields.io/pypi/v/stencila-pyla.svg" /></a>
+<a class="reference external image-reference" href="https://stencila.github.io/pyla/"><img alt="Docs" src="https://img.shields.io/badge/docs-latest-blue.svg" /></a>
+<p>This is the Python implementation of an interpreter capable of interpreting executable
+documents defined in JSON using <a class="reference external" href="https://stencila.github.io/schema/">Stencila Schema</a>.</p>
+<section id="install">
+<h3>Install<a class="headerlink" href="#install" title="Permalink to this headline">¶</a></h3>
+<p>Pyla is available as a Python package,</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip3 install stencila-pyla
+</pre></div>
+</div>
+</section>
+<section id="use">
+<h3>Use<a class="headerlink" href="#use" title="Permalink to this headline">¶</a></h3>
+<p>Register Pyla so that it can be discovered by other executors on your machine,</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3 -m stencila.pyla register
+</pre></div>
+</div>
+<p>Then, if you have <cite>``executa`</cite> &lt;<a class="reference external" href="https://github.com/stencila/executa">https://github.com/stencila/executa</a>&gt;`_ installed then you can run it using the <code class="docutils literal notranslate"><span class="pre">repl</span></code> command and specifying <code class="docutils literal notranslate"><span class="pre">python</span></code> as the starting language,</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>executa repl python
+</pre></div>
+</div>
+</section>
+<section id="develop">
+<h3>Develop<a class="headerlink" href="#develop" title="Permalink to this headline">¶</a></h3>
+<section id="setup">
+<h4>setup<a class="headerlink" href="#setup" title="Permalink to this headline">¶</a></h4>
+<p>To install the packages needed for development, run <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">setup</span></code> or,</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip3 install --user --upgrade -r requirements-dev.txt
+</pre></div>
+</div>
+</section>
+<section id="code-formatting">
+<h4>Code formatting<a class="headerlink" href="#code-formatting" title="Permalink to this headline">¶</a></h4>
+<p>We use <a class="reference external" href="https://github.com/psf/black">Black</a> to maintain a consistent code formatting style. To run it use <code class="docutils literal notranslate"><span class="pre">black</span> <span class="pre">.</span></code> or <code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">format</span></code>.</p>
+</section>
+<section id="running">
+<h4>Running<a class="headerlink" href="#running" title="Permalink to this headline">¶</a></h4>
+<p>There are two options to run the interpreter without installing this package (which can be useful when developing).</p>
+</section>
+</section>
+</section>
+<section id="use-setup-py-develop">
+<h2>Use <code class="docutils literal notranslate"><span class="pre">setup.py</span> <span class="pre">develop</span></code><a class="headerlink" href="#use-setup-py-develop" title="Permalink to this headline">¶</a></h2>
+<p>Run <code class="docutils literal notranslate"><span class="pre">python3</span> <span class="pre">setup.py</span> <span class="pre">develop</span></code> which will link this library into your site packages directory. You can then execute
+documents with the above command.</p>
+</section>
+<section id="change-into-stencila-folder">
+<h2>Change into <code class="docutils literal notranslate"><span class="pre">stencila</span></code> folder<a class="headerlink" href="#change-into-stencila-folder" title="Permalink to this headline">¶</a></h2>
+<p>You can run the interpreter as a module by changing into the <code class="docutils literal notranslate"><span class="pre">stencila</span></code> directory first, and then omitting the
+<code class="docutils literal notranslate"><span class="pre">stencila</span></code> namespace:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> stencila
+$ python3 -m pyla execute &lt;inputfile&gt; &lt;outputfile&gt; <span class="o">[</span>parameters<span class="o">]</span>
+</pre></div>
+</div>
+<section id="contents">
+<h3>Contents<a class="headerlink" href="#contents" title="Permalink to this headline">¶</a></h3>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api.html#parser">Parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-pyla.interpreter">Interpreter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-pyla.servers">Servers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api.html#module-pyla.system">System</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="indices-and-tables">
+<h3>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</section>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">pyla</a></h1>
+
+
+
+<p class="blurb">Python interpreter for executable documents</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=stencila&repo=pyla&type=mark&count=True&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+      <li>Next: <a href="api.html" title="next chapter">API</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Stencila and contributors.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.4.3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
